@@ -220,6 +220,104 @@
     letter-spacing: 0.04em;
     padding-top: 2px;
   }
+
+  /* Move-in date badges */
+  .move-in {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-weight: 500;
+    margin-top: 4px;
+  }
+  .move-in.urgent { background: var(--stop-soft); color: var(--stop); }
+  .move-in.soon   { background: var(--warn-soft); color: var(--warn); }
+  .move-in.ok     { background: var(--accent-soft); color: var(--accent); }
+  .move-in.past   { background: var(--done-soft); color: var(--done); }
+
+  /* Missing-part item flag */
+  .item.needs-part .item-text {
+    color: var(--warn);
+  }
+  .part-tag {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--warn-soft);
+    color: var(--warn);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+  }
+  .item-part-btn {
+    flex: 0 0 32px;
+    height: 32px;
+    border-radius: 8px;
+    color: var(--ink-faint);
+    font-size: 14px;
+    opacity: 0.6;
+  }
+  .item-part-btn.active {
+    opacity: 1;
+    color: var(--warn);
+  }
+  .add-item-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    align-items: center;
+  }
+  .add-item-row input[data-add-input] {
+    flex: 1;
+    height: 42px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    outline: none;
+    min-width: 0;
+  }
+  .add-item-row .part-toggle {
+    flex: 0 0 42px;
+    height: 42px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--ink-faint);
+    font-size: 16px;
+  }
+  .add-item-row .part-toggle.active {
+    background: var(--warn-soft);
+    color: var(--warn);
+    border-color: var(--warn-soft);
+  }
+  .add-item-row button[data-add-btn] {
+    flex: 0 0 auto;
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: var(--ink);
+    color: var(--bg);
+    font-weight: 500;
+  }
+  .add-item-part-name {
+    margin-top: 6px;
+    width: 100%;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px dashed var(--warn);
+    background: var(--warn-soft);
+    outline: none;
+    font-size: 13px;
+    color: var(--ink);
+    display: none;
+  }
+  .add-item-part-name.show { display: block; }
   .meta .value { flex: 1; color: var(--ink); }
   .meta .value.empty { color: var(--ink-faint); font-style: italic; }
 
@@ -521,6 +619,10 @@
     <div class="field">
       <label>Next Step</label>
       <textarea id="f-next"></textarea>
+    </div>
+    <div class="field">
+      <label>Move-in Date (optional)</label>
+      <input id="f-movein" type="date" />
     </div>
     <div class="field">
       <label>Vendor / Part Source (optional)</label>
@@ -838,6 +940,14 @@ function render() {
         </div>
 
         <div class="meta">
+          ${u.moveIn ? `
+          <div class="row">
+            <div class="label">Move-in</div>
+            <div class="value">
+              ${formatMoveIn(u.moveIn)}
+              ${moveInBadge(u.moveIn)}
+            </div>
+          </div>` : ''}
           <div class="row">
             <div class="label">Blocker</div>
             <div class="value ${u.blocker ? '' : 'empty'}">${escapeHtml(u.blocker || 'None')}</div>
@@ -850,6 +960,13 @@ function render() {
           <div class="row">
             <div class="label">Vendor</div>
             <div class="value">${escapeHtml(u.vendor)}</div>
+          </div>` : ''}
+          ${countMissingParts(items) > 0 ? `
+          <div class="row">
+            <div class="label">Parts</div>
+            <div class="value" style="color:var(--warn);font-weight:500;">
+              ${countMissingParts(items)} item${countMissingParts(items)===1?'':'s'} waiting on parts
+            </div>
           </div>` : ''}
         </div>
 
@@ -871,10 +988,12 @@ function render() {
             : open.map((i,idx) => itemHtml(i, items.indexOf(i))).join('')
           }
 
-          <div class="add-item">
+          <div class="add-item-row">
             <input type="text" placeholder="Add open item…" data-add-input />
+            <button class="part-toggle" data-part-toggle aria-label="Mark as missing part" title="Toggle: needs a part">🔧</button>
             <button data-add-btn>Add</button>
           </div>
+          <input type="text" class="add-item-part-name" data-part-name placeholder="Part name (optional)…" />
 
           ${closed.length ? `
             <div class="items-head" style="margin-top:10px;">
@@ -898,15 +1017,52 @@ function render() {
 }
 
 function itemHtml(i, idx) {
+  const partTag = i.part
+    ? `<span class="part-tag" title="${escapeHtml(i.partName || 'Needs part')}">🔧 ${escapeHtml(i.partName || 'part')}</span>`
+    : '';
   return `
-    <div class="item ${i.d ? 'done' : ''}" data-idx="${idx}">
+    <div class="item ${i.d ? 'done' : ''} ${i.part ? 'needs-part' : ''}" data-idx="${idx}">
       <button class="check" data-toggle aria-label="Toggle done">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
       </button>
-      <div class="item-text">${escapeHtml(i.t)}</div>
+      <div class="item-text">${escapeHtml(i.t)}${partTag}</div>
+      <button class="item-part-btn ${i.part ? 'active' : ''}" data-toggle-part aria-label="Toggle missing part" title="Mark / unmark as needing part">🔧</button>
       <button class="item-del" data-del aria-label="Delete item">×</button>
     </div>
   `;
+}
+
+/* ---------- Move-in helpers ---------- */
+function parseDate(s) {
+  if (!s) return null;
+  // Treat as local date (avoid TZ shift)
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+function daysUntil(s) {
+  const d = parseDate(s);
+  if (!d) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.round((d - today) / 86400000);
+}
+function formatMoveIn(s) {
+  const d = parseDate(s);
+  if (!d) return escapeHtml(s);
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+function moveInBadge(s) {
+  const days = daysUntil(s);
+  if (days === null) return '';
+  if (days < 0)  return `<span class="move-in past">${Math.abs(days)}d ago</span>`;
+  if (days === 0) return `<span class="move-in urgent">Today</span>`;
+  if (days === 1) return `<span class="move-in urgent">Tomorrow</span>`;
+  if (days <= 3) return `<span class="move-in urgent">${days}d left</span>`;
+  if (days <= 7) return `<span class="move-in soon">${days}d left</span>`;
+  return `<span class="move-in ok">${days}d left</span>`;
+}
+function countMissingParts(items) {
+  return (items || []).filter(i => i.part && !i.d).length;
 }
 
 /* ---------- Events ---------- */
@@ -946,13 +1102,47 @@ document.getElementById('cards').addEventListener('click', e => {
     save(); render();
     return;
   }
+  // toggle part flag on existing item
+  const tp = e.target.closest('[data-toggle-part]');
+  if (tp) {
+    const idx = +tp.closest('.item').dataset.idx;
+    const it = unit.items[idx];
+    if (it.part) {
+      it.part = false;
+      delete it.partName;
+    } else {
+      const name = prompt('Part name (leave blank for generic):', it.partName || '');
+      if (name === null) return; // cancelled
+      it.part = true;
+      if (name.trim()) it.partName = name.trim();
+    }
+    autoFlipStatus(unit);
+    save(); render();
+    return;
+  }
+  // toggle the part flag on the add-row before clicking Add
+  const partToggle = e.target.closest('[data-part-toggle]');
+  if (partToggle) {
+    partToggle.classList.toggle('active');
+    const partInput = card.querySelector('[data-part-name]');
+    if (partInput) partInput.classList.toggle('show', partToggle.classList.contains('active'));
+    return;
+  }
   // add item
   const addBtn = e.target.closest('[data-add-btn]');
   if (addBtn) {
     const input = card.querySelector('[data-add-input]');
     const t = input.value.trim();
     if (!t) return;
-    unit.items.push({ t, d: false });
+    const partOn = card.querySelector('[data-part-toggle]')?.classList.contains('active');
+    const partName = card.querySelector('[data-part-name]')?.value.trim();
+    const newItem = { t, d: false };
+    if (partOn) {
+      newItem.part = true;
+      if (partName) newItem.partName = partName;
+    }
+    unit.items.push(newItem);
+    autoFlipStatus(unit);
     save(); render();
     return;
   }
@@ -996,6 +1186,19 @@ function uniqueId(base) {
   return id;
 }
 
+// If any open item is flagged as missing a part, nudge the unit's status
+// to "Waiting on Part" (unless it's Done). If parts get cleared and the
+// status was Waiting on Part, drop back to In Progress.
+function autoFlipStatus(unit) {
+  const hasMissing = countMissingParts(unit.items) > 0;
+  if (unit.status === 'Done') return;
+  if (hasMissing) {
+    unit.status = 'Waiting on Part';
+  } else if (unit.status === 'Waiting on Part') {
+    unit.status = 'In Progress';
+  }
+}
+
 /* ---------- Modal ---------- */
 const modal = document.getElementById('unitModal');
 const f = {
@@ -1005,6 +1208,7 @@ const f = {
   blocker: document.getElementById('f-blocker'),
   next: document.getElementById('f-next'),
   vendor: document.getElementById('f-vendor'),
+  moveIn: document.getElementById('f-movein'),
 };
 
 function openModal(unit) {
@@ -1017,6 +1221,7 @@ function openModal(unit) {
   f.blocker.value = unit ? unit.blocker || '' : '';
   f.next.value = unit ? unit.next || '' : '';
   f.vendor.value = unit ? unit.vendor || '' : '';
+  f.moveIn.value = unit ? unit.moveIn || '' : '';
   modal.classList.add('open');
   // Skip autofocus on touch devices — iOS Safari sometimes fights the keyboard
   // and it can look like the modal "didn't open". User can tap the field.
@@ -1051,6 +1256,7 @@ document.getElementById('f-save').addEventListener('click', () => {
     u.blocker = f.blocker.value.trim();
     u.next = f.next.value.trim();
     u.vendor = f.vendor.value.trim();
+    u.moveIn = f.moveIn.value || '';
   } else {
     if (state.some(x => x.id === newId)) {
       alert('That unit number already exists.');
@@ -1063,6 +1269,7 @@ document.getElementById('f-save').addEventListener('click', () => {
       blocker: f.blocker.value.trim(),
       next: f.next.value.trim(),
       vendor: f.vendor.value.trim(),
+      moveIn: f.moveIn.value || '',
       items: []
     });
   }
