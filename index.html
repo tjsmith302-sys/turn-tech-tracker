@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#f5f2ec" />
+<title>Turn Tech Tracker</title>
+<style>
+  /* ---------- Base ---------- */
+  :root {
+    --bg: #f5f2ec;
+    --surface: #fffdf8;
+    --surface-2: #efeae0;
+    --ink: #2a2722;
+    --ink-soft: #6b655c;
+    --ink-faint: #9c958a;
+    --line: #e2dcd0;
+    --accent: #3a6b4c;      /* calm green */
+    --accent-soft: #d9e4dc;
+    --warn: #a66a2c;        /* amber */
+    --warn-soft: #f1e3cf;
+    --stop: #a84a3a;        /* muted red */
+    --stop-soft: #f0d6d0;
+    --done: #6b655c;
+    --done-soft: #e6e2d8;
+    --blue: #3a5a7a;
+    --blue-soft: #d6e0ea;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 6px rgba(0,0,0,.04);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  }
+  [data-theme="dark"] {
+    --bg: #17181a;
+    --surface: #1f2124;
+    --surface-2: #282a2e;
+    --ink: #ece8e0;
+    --ink-soft: #a8a49b;
+    --ink-faint: #6e6a61;
+    --line: #33363b;
+    --accent: #7bbf93;
+    --accent-soft: #25382c;
+    --warn: #d9a066;
+    --warn-soft: #3a2e1f;
+    --stop: #d58b7d;
+    --stop-soft: #3a2422;
+    --done: #8c8880;
+    --done-soft: #2b2d31;
+    --blue: #8fb0cc;
+    --blue-soft: #22303a;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.25);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.45;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    min-height: 100vh;
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { background: none; border: none; cursor: pointer; }
+
+  /* ---------- Layout ---------- */
+  .wrap {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 14px 16px 120px;
+  }
+
+  header.top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 6px 0 14px;
+  }
+  header.top h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  header.top h1 span {
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--ink-faint);
+    margin-top: 2px;
+    letter-spacing: 0.02em;
+  }
+  .sync {
+    display: inline-block !important;
+    margin-top: 4px !important;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px !important;
+    letter-spacing: 0.03em;
+    background: var(--surface-2);
+    color: var(--ink-faint);
+  }
+  .sync.synced { background: var(--accent-soft); color: var(--accent); }
+  .sync.saving { background: var(--warn-soft); color: var(--warn); }
+  .sync.offline { background: var(--stop-soft); color: var(--stop); }
+  .theme-btn {
+    font-size: 20px;
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+
+  /* ---------- Search + filters ---------- */
+  .controls {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+    padding: 6px 0 10px;
+    margin-bottom: 6px;
+  }
+  .search {
+    width: 100%;
+    height: 46px;
+    padding: 0 14px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    outline: none;
+    font-size: 16px;
+  }
+  .search:focus { border-color: var(--ink-faint); }
+  .filters {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 10px 2px 4px;
+    scrollbar-width: none;
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+
+  /* ---------- Cards ---------- */
+  .cards { display: flex; flex-direction: column; gap: 14px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 14px 10px;
+  }
+  .unit-id {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .unit-id small {
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--ink-faint);
+    margin-top: 3px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .status-pill {
+    align-self: flex-start;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .status-not       { background: var(--done-soft); color: var(--done); }
+  .status-progress  { background: var(--accent-soft); color: var(--accent); }
+  .status-part      { background: var(--warn-soft); color: var(--warn); }
+  .status-vendor    { background: var(--blue-soft); color: var(--blue); }
+  .status-done      { background: var(--done-soft); color: var(--done); text-decoration: none; }
+
+  .meta {
+    padding: 0 14px 4px;
+    font-size: 14px;
+  }
+  .meta .row {
+    display: flex;
+    gap: 8px;
+    padding: 6px 0;
+    border-top: 1px dashed var(--line);
+  }
+  .meta .row:first-child { border-top: none; }
+  .meta .label {
+    flex: 0 0 80px;
+    color: var(--ink-faint);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding-top: 2px;
+  }
+  .meta .value { flex: 1; color: var(--ink); }
+  .meta .value.empty { color: var(--ink-faint); font-style: italic; }
+
+  /* ---------- Progress ---------- */
+  .progress-wrap {
+    padding: 8px 14px 12px;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .progress-bar {
+    height: 6px;
+    background: var(--surface-2);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+    transition: width .3s ease;
+  }
+
+  /* ---------- Items ---------- */
+  .items {
+    padding: 4px 14px 10px;
+  }
+  .items-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0 6px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-faint);
+  }
+  .items-head .count {
+    background: var(--surface-2);
+    color: var(--ink-soft);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: 0.03em;
+  }
+  .item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 2px;
+    border-top: 1px solid var(--line);
+    min-height: 44px;
+  }
+  .item:first-of-type { border-top: none; }
+  .check {
+    flex: 0 0 24px;
+    height: 24px;
+    margin-top: 1px;
+    border-radius: 6px;
+    border: 1.5px solid var(--ink-faint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    transition: all .15s ease;
+  }
+  .item.done .check {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .check svg { width: 14px; height: 14px; display: none; }
+  .item.done .check svg { display: block; }
+  .item-text {
+    flex: 1;
+    font-size: 15px;
+    line-height: 1.4;
+    padding-top: 2px;
+    word-break: break-word;
+  }
+  .item.done .item-text {
+    color: var(--ink-faint);
+    text-decoration: line-through;
+  }
+  .item-del {
+    flex: 0 0 32px;
+    height: 32px;
+    border-radius: 8px;
+    color: var(--ink-faint);
+    font-size: 18px;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .item:hover .item-del,
+  .item:focus-within .item-del { opacity: 1; }
+
+  .add-item {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .add-item input {
+    flex: 1;
+    height: 42px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    outline: none;
+  }
+  .add-item input:focus { border-color: var(--ink-faint); }
+  .add-item button {
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: var(--ink);
+    color: var(--bg);
+    font-weight: 500;
+  }
+
+  /* ---------- Card actions ---------- */
+  .card-actions {
+    display: flex;
+    border-top: 1px solid var(--line);
+    background: var(--surface-2);
+  }
+  .card-actions button {
+    flex: 1;
+    height: 46px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    border-right: 1px solid var(--line);
+  }
+  .card-actions button:last-child { border-right: none; }
+  .card-actions button:active { background: var(--line); }
+  .card-actions .action-complete {
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .card-actions .action-reopen {
+    color: var(--warn);
+    font-weight: 500;
+  }
+
+  /* ---------- Empty ---------- */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-faint);
+    font-size: 14px;
+  }
+
+  /* ---------- Floating add ---------- */
+  .fab {
+    position: fixed;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    right: 20px;
+    width: 58px;
+    height: 58px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 28px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.18);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.35);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 20;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    width: 100%;
+    max-width: 560px;
+    background: var(--surface);
+    border-radius: 18px 18px 0 0;
+    padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+  @media (min-width: 600px) {
+    .modal-backdrop { align-items: center; }
+    .modal { border-radius: 18px; max-height: 86vh; }
+  }
+  .modal h2 {
+    margin: 0 0 14px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    margin-bottom: 6px;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    outline: none;
+    font-size: 16px;
+  }
+  .field textarea { min-height: 70px; resize: vertical; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--ink-faint); }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .modal-actions button {
+    flex: 1;
+    height: 48px;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 15px;
+  }
+  .btn-primary { background: var(--ink); color: var(--bg); }
+  .btn-ghost { background: var(--surface-2); color: var(--ink-soft); border: 1px solid var(--line); }
+  .btn-danger { background: var(--stop-soft); color: var(--stop); }
+
+  /* subtle hand-drawn feel */
+  .card { transform: rotate(-0.05deg); }
+  .card:nth-child(even) { transform: rotate(0.05deg); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <h1>
+      Turn Tech Tracker
+      <span id="summary">—</span>
+      <span id="syncStatus" class="sync" title="Sync status"></span>
+    </h1>
+    <button class="theme-btn" id="themeBtn" aria-label="Toggle dark mode">🌙</button>
+  </header>
+
+  <div class="controls">
+    <input class="search" id="search" type="search" placeholder="Search unit, item, blocker…" />
+    <div class="filters" id="filters">
+      <button class="chip" data-filter="active" aria-pressed="true">Active</button>
+      <button class="chip" data-filter="Not Started" aria-pressed="false">Not Started</button>
+      <button class="chip" data-filter="In Progress" aria-pressed="false">In Progress</button>
+      <button class="chip" data-filter="Waiting on Part" aria-pressed="false">Waiting on Part</button>
+      <button class="chip" data-filter="Waiting on Vendor" aria-pressed="false">Waiting on Vendor</button>
+      <button class="chip" data-filter="Done" aria-pressed="false">Completed</button>
+    </div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+</div>
+
+<button class="fab" id="addUnitBtn" aria-label="Add unit">＋</button>
+
+<!-- Edit unit modal -->
+<div class="modal-backdrop" id="unitModal">
+  <div class="modal">
+    <h2 id="modalTitle">Edit Unit</h2>
+    <div class="field">
+      <label>Unit Number</label>
+      <input id="f-id" type="text" inputmode="text" placeholder="e.g. 924" />
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <input id="f-category" type="text" placeholder="Go Backs, Full Turn, Punch…" />
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <select id="f-status">
+        <option>Not Started</option>
+        <option>In Progress</option>
+        <option>Waiting on Part</option>
+        <option>Waiting on Vendor</option>
+        <option>Done</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Blocker</label>
+      <input id="f-blocker" type="text" placeholder="None right now" />
+    </div>
+    <div class="field">
+      <label>Next Step</label>
+      <textarea id="f-next"></textarea>
+    </div>
+    <div class="field">
+      <label>Vendor / Part Source (optional)</label>
+      <input id="f-vendor" type="text" placeholder="Shop, supplier…" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="f-cancel">Cancel</button>
+      <button class="btn-danger" id="f-delete">Delete</button>
+      <button class="btn-primary" id="f-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   Turn Tech Tracker — personal single-file tool
+   Data lives in localStorage. Everything is plain state + render.
+================================================================ */
+
+const STORAGE_KEY = 'turn-tech-tracker/v1';
+const THEME_KEY = 'turn-tech-tracker/theme';
+
+/* ---------- Cloud sync (Supabase) ---------- */
+const SUPABASE_URL = 'https://yglpobqgsjvrthtnnhrn.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Uvc0cbE3zx_Szp7s883nCQ_xhoQrlNS';
+const ROW_ID = 'main';
+const REST_ENDPOINT = `${SUPABASE_URL}/rest/v1/turn_tech_tracker`;
+const POLL_INTERVAL_MS = 2500; // how often to check for teammate updates
+
+const supaHeaders = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Content-Type': 'application/json'
+};
+
+let lastRemoteStateJSON = null;  // to ignore our own echoes
+let lastRemoteUpdatedAt = null;  // to skip unchanged rows
+let saveTimer = null;
+let pollTimer = null;
+let isSaving = false;
+
+function setSync(status, label) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  el.className = 'sync ' + status;
+  el.textContent = label;
+}
+
+async function cloudLoad(attempt=0) {
+  setSync('saving', 'Loading…');
+  try {
+    const res = await fetch(`${REST_ENDPOINT}?id=eq.${ROW_ID}&select=state,updated_at`, { headers: supaHeaders, cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    if (rows && rows[0]) {
+      const remote = rows[0].state;
+      lastRemoteUpdatedAt = rows[0].updated_at;
+      if (Array.isArray(remote) && remote.length > 0) {
+        state = remote;
+        lastRemoteStateJSON = JSON.stringify(remote);
+        saveLocal();
+        render();
+      } else {
+        // First-ever sync — push whatever we have up.
+        await cloudPush(true);
+      }
+    }
+    setSync('synced', 'Synced');
+  } catch (e) {
+    console.warn('cloud load failed (attempt ' + attempt + ')', e);
+    if (attempt < 3) {
+      // Silent retry with backoff — avoids a flash of Offline on slow first load.
+      await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+      return cloudLoad(attempt + 1);
+    }
+    setSync('offline', 'Offline');
+  }
+}
+
+// Check the cloud for teammate changes. Runs on a timer.
+async function cloudPoll() {
+  if (isSaving) return; // don't fight our own in-flight write
+  try {
+    const res = await fetch(`${REST_ENDPOINT}?id=eq.${ROW_ID}&select=state,updated_at`, { headers: supaHeaders, cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    if (!rows || !rows[0]) return;
+    const remoteUpdatedAt = rows[0].updated_at;
+    if (remoteUpdatedAt === lastRemoteUpdatedAt) {
+      // Nothing new, but request succeeded — clear any stale Offline state.
+      const el = document.getElementById('syncStatus');
+      if (el && el.classList.contains('offline')) setSync('synced', 'Synced');
+      return;
+    }
+    const remote = rows[0].state;
+    const remoteJSON = JSON.stringify(remote);
+    lastRemoteUpdatedAt = remoteUpdatedAt;
+    // Ignore if it's our own echo.
+    if (remoteJSON === JSON.stringify(state)) {
+      lastRemoteStateJSON = remoteJSON;
+      setSync('synced', 'Synced');
+      return;
+    }
+    // Pull teammate's changes in.
+    state = remote;
+    lastRemoteStateJSON = remoteJSON;
+    saveLocal();
+    render();
+    setSync('synced', 'Updated');
+    setTimeout(() => setSync('synced', 'Synced'), 1500);
+  } catch (e) {
+    setSync('offline', 'Offline');
+  }
+}
+
+function startPolling() {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(cloudPoll, POLL_INTERVAL_MS);
+  // Also refresh immediately when the tab regains focus — faster feel on mobile.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') cloudPoll();
+  });
+}
+
+async function cloudPush(initial=false) {
+  const payload = JSON.stringify(state);
+  if (payload === lastRemoteStateJSON && !initial) return;
+  setSync('saving', 'Saving…');
+  isSaving = true;
+  try {
+    const nowIso = new Date().toISOString();
+    const res = await fetch(`${REST_ENDPOINT}?id=eq.${ROW_ID}`, {
+      method: 'PATCH',
+      headers: { ...supaHeaders, 'Prefer': 'return=representation' },
+      body: JSON.stringify({ state, updated_at: nowIso })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    if (rows && rows[0]) lastRemoteUpdatedAt = rows[0].updated_at;
+    lastRemoteStateJSON = payload;
+    setSync('synced', 'Synced');
+  } catch (e) {
+    console.warn('cloud push failed', e);
+    setSync('offline', 'Offline — retrying');
+    setTimeout(() => cloudPush(), 3000);
+  } finally {
+    isSaving = false;
+  }
+}
+
+function scheduleCloudPush() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(cloudPush, 400);
+}
+
+
+
+/* ---------- Seed data ---------- */
+const SEED = [
+  {
+    id: '924',
+    category: 'Go Backs',
+    status: 'In Progress',
+    blocker: 'None right now',
+    next: 'Walk blanks and fill remaining open bullets',
+    vendor: '',
+    items: [
+      { t: '2nd bathroom needs stopper', d: true },
+      { t: 'Clean out light fixture 2nd bedroom', d: true },
+      { t: 'Vents in 2nd bathroom both spray', d: true },
+      { t: 'Blind missing in second bedroom', d: true },
+      { t: 'Clean out closet light', d: true },
+      { t: 'Paint inside all bathroom and kitchen drawers', d: true },
+      { t: 'Touch up paint in washer and dryer room', d: true },
+      { t: 'Socket cover missing in master bedroom', d: true },
+      { t: 'Light cover missing in master bedroom', d: true },
+      { t: 'Caulk around bathroom sink', d: true },
+      { t: 'Both vent covers in master bathroom spray', d: true },
+      { t: 'Change smoke alarm contact paper master bathroom', d: true },
+      { t: 'Clean vent master bathroom', d: true },
+      { t: 'Two holes behind 2 bathroom door', d: true },
+      { t: 'Touch up paint in living room, master bathroom, and behind front door', d: true },
+      { t: 'Fix holes and paint 2nd bedroom', d: true },
+      { t: 'Hallway light clean out', d: true },
+      { t: 'Check hose on side of refrigerator', d: true },
+      { t: 'Add any remaining unidentified go-backs', d: false }
+    ]
+  },
+  {
+    id: '516',
+    category: 'Go Backs',
+    status: 'Waiting on Part',
+    blocker: 'Waiting on contact paper for cabinet siding',
+    next: 'Install contact paper when part arrives',
+    vendor: 'Shop / supply room',
+    items: [
+      { t: 'Paint front door', d: true },
+      { t: 'Clean around front door and siding to stairs', d: true },
+      { t: 'Remove sticky texture by stove outlet and repaint', d: true },
+      { t: 'Touch up paint around outlet cover and clean red off cover', d: true },
+      { t: 'Spray paint bottom of stove black', d: true },
+      { t: 'Open all vents throughout house', d: true },
+      { t: 'Paint trim throughout house, mostly living room and dining room', d: true },
+      { t: 'Check bedroom window lock and latch', d: true },
+      { t: 'Paint and clean around window in master bedroom', d: true },
+      { t: 'Paint closet door inside brown bedroom', d: true },
+      { t: 'Paint return vent on bottom in living room', d: true },
+      { t: 'Knock down spider webs in foyer', d: true },
+      { t: 'Replace kitchen cabinet contact paper', d: false }
+    ]
+  }
+];
+
+/* ---------- State ---------- */
+let state = load();
+let filter = 'active';
+let query = '';
+let editingId = null; // unit id being edited; null = new
+
+function clone(x) { return JSON.parse(JSON.stringify(x)); }
+function load() {
+  // We still keep a local cache so the app opens instantly while the cloud loads.
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length) return parsed;
+    }
+  } catch (e) { console.warn('load failed', e); }
+  return clone(SEED);
+}
+function saveLocal() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch(e) { console.warn('save failed', e); }
+}
+// `save()` now persists locally AND syncs to the cloud.
+function save() {
+  saveLocal();
+  scheduleCloudPush();
+}
+
+/* ---------- Helpers ---------- */
+const statusClass = s => ({
+  'Not Started': 'status-not',
+  'In Progress': 'status-progress',
+  'Waiting on Part': 'status-part',
+  'Waiting on Vendor': 'status-vendor',
+  'Done': 'status-done'
+}[s] || 'status-not');
+
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function findUnit(id){ return state.find(u => u.id === id); }
+
+function filterUnits() {
+  const q = query.trim().toLowerCase();
+  return state.filter(u => {
+    // Completed tab shows ONLY done units.
+    // Any other tab hides done units entirely.
+    if (filter === 'Done') {
+      if (u.status !== 'Done') return false;
+    } else if (filter === 'active') {
+      if (u.status === 'Done') return false;
+    } else {
+      if (u.status !== filter) return false;
+    }
+    if (!q) return true;
+    const hay = [
+      u.id, u.category, u.status, u.blocker, u.next, u.vendor,
+      ...(u.items || []).map(i => i.t)
+    ].join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+}
+
+/* ---------- Render ---------- */
+function render() {
+  const root = document.getElementById('cards');
+  const units = filterUnits();
+
+  // summary
+  const total = state.length;
+  const done = state.filter(u => u.status === 'Done').length;
+  const openItems = state.reduce((n,u) => n + (u.items||[]).filter(i => !i.d).length, 0);
+  document.getElementById('summary').textContent =
+    `${total} unit${total===1?'':'s'} · ${openItems} open item${openItems===1?'':'s'} · ${done} done`;
+
+  if (units.length === 0) {
+    const msg = filter === 'Done'
+      ? 'No completed units yet. Finish one and it\u2019ll land here.'
+      : (query ? 'Nothing matches. Clear search or filter.' : 'All clear. Tap + to add a unit.');
+    root.innerHTML = `<div class="empty">${msg}</div>`;
+    return;
+  }
+
+  root.innerHTML = units.map(u => {
+    const items = u.items || [];
+    const open = items.filter(i => !i.d);
+    const closed = items.filter(i => i.d);
+    const total = items.length;
+    const pct = total ? Math.round((closed.length / total) * 100) : 0;
+
+    return `
+      <article class="card" data-id="${escapeHtml(u.id)}">
+        <div class="card-head">
+          <div class="unit-id">
+            ${escapeHtml(u.id)}
+            <small>${escapeHtml(u.category || 'Unit')}</small>
+          </div>
+          <span class="status-pill ${statusClass(u.status)}">${escapeHtml(u.status)}</span>
+        </div>
+
+        <div class="meta">
+          <div class="row">
+            <div class="label">Blocker</div>
+            <div class="value ${u.blocker ? '' : 'empty'}">${escapeHtml(u.blocker || 'None')}</div>
+          </div>
+          <div class="row">
+            <div class="label">Next</div>
+            <div class="value ${u.next ? '' : 'empty'}">${escapeHtml(u.next || '—')}</div>
+          </div>
+          ${u.vendor ? `
+          <div class="row">
+            <div class="label">Vendor</div>
+            <div class="value">${escapeHtml(u.vendor)}</div>
+          </div>` : ''}
+        </div>
+
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>Progress</span>
+            <span>${closed.length}/${total} · ${pct}%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+        </div>
+
+        <div class="items">
+          <div class="items-head">
+            <span>Open</span>
+            <span class="count">${open.length}</span>
+          </div>
+          ${open.length === 0
+            ? `<div class="item" style="color:var(--ink-faint);font-style:italic;border:none;">All clear. Add next thing below.</div>`
+            : open.map((i,idx) => itemHtml(i, items.indexOf(i))).join('')
+          }
+
+          <div class="add-item">
+            <input type="text" placeholder="Add open item…" data-add-input />
+            <button data-add-btn>Add</button>
+          </div>
+
+          ${closed.length ? `
+            <div class="items-head" style="margin-top:10px;">
+              <span>Completed</span>
+              <span class="count">${closed.length}</span>
+            </div>
+            ${closed.map(i => itemHtml(i, items.indexOf(i))).join('')}
+          ` : ''}
+        </div>
+
+        <div class="card-actions">
+          ${u.status === 'Done'
+            ? `<button data-action="reopen" class="action-reopen">Reopen</button>`
+            : `<button data-action="complete" class="action-complete">Mark Complete</button>`}
+          <button data-action="edit">Edit</button>
+          <button data-action="duplicate">Duplicate</button>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+function itemHtml(i, idx) {
+  return `
+    <div class="item ${i.d ? 'done' : ''}" data-idx="${idx}">
+      <button class="check" data-toggle aria-label="Toggle done">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </button>
+      <div class="item-text">${escapeHtml(i.t)}</div>
+      <button class="item-del" data-del aria-label="Delete item">×</button>
+    </div>
+  `;
+}
+
+/* ---------- Events ---------- */
+document.getElementById('search').addEventListener('input', e => {
+  query = e.target.value;
+  render();
+});
+
+document.getElementById('filters').addEventListener('click', e => {
+  const btn = e.target.closest('.chip');
+  if (!btn) return;
+  filter = btn.dataset.filter;
+  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c === btn ? 'true' : 'false'));
+  render();
+});
+
+document.getElementById('cards').addEventListener('click', e => {
+  const card = e.target.closest('.card');
+  if (!card) return;
+  const id = card.dataset.id;
+  const unit = findUnit(id);
+  if (!unit) return;
+
+  // item toggle
+  const toggle = e.target.closest('[data-toggle]');
+  if (toggle) {
+    const idx = +toggle.closest('.item').dataset.idx;
+    unit.items[idx].d = !unit.items[idx].d;
+    save(); render();
+    return;
+  }
+  // delete item
+  const del = e.target.closest('[data-del]');
+  if (del) {
+    const idx = +del.closest('.item').dataset.idx;
+    unit.items.splice(idx, 1);
+    save(); render();
+    return;
+  }
+  // add item
+  const addBtn = e.target.closest('[data-add-btn]');
+  if (addBtn) {
+    const input = card.querySelector('[data-add-input]');
+    const t = input.value.trim();
+    if (!t) return;
+    unit.items.push({ t, d: false });
+    save(); render();
+    return;
+  }
+  // card actions
+  const act = e.target.closest('[data-action]');
+  if (act) {
+    const a = act.dataset.action;
+    if (a === 'edit') openModal(unit);
+    if (a === 'complete') {
+      unit.status = 'Done';
+      // Also mark every open item done so progress reads 100%.
+      (unit.items || []).forEach(i => i.d = true);
+      save(); render();
+    }
+    if (a === 'reopen') {
+      unit.status = 'In Progress';
+      save(); render();
+    }
+    if (a === 'duplicate') {
+      const copy = clone(unit);
+      copy.id = uniqueId(unit.id + '-copy');
+      copy.status = 'Not Started';
+      copy.items = (copy.items || []).map(i => ({ t: i.t, d: false }));
+      state.unshift(copy);
+      save(); render();
+    }
+  }
+});
+
+// Enter key in add-item input
+document.getElementById('cards').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.matches('[data-add-input]')) {
+    e.preventDefault();
+    e.target.closest('.add-item').querySelector('[data-add-btn]').click();
+  }
+});
+
+function uniqueId(base) {
+  let id = base, n = 2;
+  while (state.some(u => u.id === id)) { id = `${base} ${n++}`; }
+  return id;
+}
+
+/* ---------- Modal ---------- */
+const modal = document.getElementById('unitModal');
+const f = {
+  id: document.getElementById('f-id'),
+  category: document.getElementById('f-category'),
+  status: document.getElementById('f-status'),
+  blocker: document.getElementById('f-blocker'),
+  next: document.getElementById('f-next'),
+  vendor: document.getElementById('f-vendor'),
+};
+
+function openModal(unit) {
+  editingId = unit ? unit.id : null;
+  document.getElementById('modalTitle').textContent = unit ? `Edit ${unit.id}` : 'New Unit';
+  document.getElementById('f-delete').style.display = unit ? '' : 'none';
+  f.id.value = unit ? unit.id : '';
+  f.category.value = unit ? unit.category || '' : 'Go Backs';
+  f.status.value = unit ? unit.status : 'Not Started';
+  f.blocker.value = unit ? unit.blocker || '' : '';
+  f.next.value = unit ? unit.next || '' : '';
+  f.vendor.value = unit ? unit.vendor || '' : '';
+  modal.classList.add('open');
+  // Skip autofocus on touch devices — iOS Safari sometimes fights the keyboard
+  // and it can look like the modal "didn't open". User can tap the field.
+  if (!('ontouchstart' in window)) {
+    setTimeout(() => f.id.focus(), 50);
+  }
+}
+function closeModal() { modal.classList.remove('open'); editingId = null; }
+
+document.getElementById('addUnitBtn').addEventListener('click', (e) => { e.preventDefault(); openModal(null); });
+document.getElementById('f-cancel').addEventListener('click', closeModal);
+// Only close when tapping the dark backdrop itself (not any child element).
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+// Prevent bubbling from the modal content to the backdrop on iOS Safari.
+document.querySelector('#unitModal .modal').addEventListener('click', e => e.stopPropagation());
+
+document.getElementById('f-save').addEventListener('click', () => {
+  const newId = f.id.value.trim();
+  if (!newId) { f.id.focus(); return; }
+
+  if (editingId) {
+    const u = findUnit(editingId);
+    if (!u) return;
+    // handle rename
+    if (newId !== editingId && state.some(x => x.id === newId)) {
+      alert('That unit number already exists.');
+      return;
+    }
+    u.id = newId;
+    u.category = f.category.value.trim();
+    u.status = f.status.value;
+    u.blocker = f.blocker.value.trim();
+    u.next = f.next.value.trim();
+    u.vendor = f.vendor.value.trim();
+  } else {
+    if (state.some(x => x.id === newId)) {
+      alert('That unit number already exists.');
+      return;
+    }
+    state.unshift({
+      id: newId,
+      category: f.category.value.trim(),
+      status: f.status.value,
+      blocker: f.blocker.value.trim(),
+      next: f.next.value.trim(),
+      vendor: f.vendor.value.trim(),
+      items: []
+    });
+  }
+  save(); render(); closeModal();
+});
+
+document.getElementById('f-delete').addEventListener('click', () => {
+  if (!editingId) return;
+  if (!confirm(`Delete unit ${editingId}? This can't be undone.`)) return;
+  state = state.filter(u => u.id !== editingId);
+  save(); render(); closeModal();
+});
+
+/* ---------- Theme ---------- */
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  themeBtn.textContent = t === 'dark' ? '☀️' : '🌙';
+  document.querySelector('meta[name="theme-color"]').setAttribute(
+    'content', t === 'dark' ? '#17181a' : '#f5f2ec'
+  );
+}
+applyTheme(localStorage.getItem(THEME_KEY) || 'light');
+themeBtn.addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+});
+
+/* ---------- Go ---------- */
+render();
+// Small delay so iOS Safari finishes painting before the first network call —
+// prevents a spurious "Offline" flash.
+setTimeout(() => { cloudLoad().then(startPolling); }, 150);
+</script>
+</body>
+</html>
