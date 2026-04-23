@@ -138,7 +138,7 @@
     -webkit-backdrop-filter: blur(10px);
     color: var(--ink-soft);
   }
-  .sync.synced { background: var(--accent-soft); color: var(--accent); }
+  .sync.synced { background: var(--blue-soft); color: var(--blue); }
   .sync.saving { background: var(--warn-soft); color: var(--warn); }
   .sync.offline { background: var(--stop-soft); color: var(--stop); }
   .theme-btn {
@@ -411,7 +411,7 @@
   }
   .progress-fill {
     height: 100%;
-    background: var(--accent);
+    background: linear-gradient(90deg, var(--blue) 0%, #9a7bd1 100%);
     border-radius: 999px;
     transition: width .3s ease;
   }
@@ -460,8 +460,8 @@
     transition: all .15s ease;
   }
   .item.done .check {
-    background: var(--accent);
-    border-color: var(--accent);
+    background: var(--ink);
+    border-color: var(--ink);
     color: white;
   }
   .check svg { width: 14px; height: 14px; display: none; }
@@ -915,10 +915,7 @@
       <input class="search" id="search" type="search" placeholder="Search unit, item, blocker…" />
       <div class="filters" id="filters">
         <button class="chip" data-filter="active" aria-pressed="true">Active</button>
-        <button class="chip" data-filter="Not Started" aria-pressed="false">Not Started</button>
-        <button class="chip" data-filter="In Progress" aria-pressed="false">In Progress</button>
-        <button class="chip" data-filter="Waiting on Part" aria-pressed="false">Waiting on Part</button>
-        <button class="chip" data-filter="Waiting on Vendor" aria-pressed="false">Waiting on Vendor</button>
+        <button class="chip" data-filter="hold" aria-pressed="false">On Hold</button>
         <button class="chip" data-filter="Done" aria-pressed="false">Completed</button>
       </div>
     </div>
@@ -1400,12 +1397,16 @@ function findUnit(id){ return state.find(u => u.id === id); }
 function filterUnits() {
   const q = query.trim().toLowerCase();
   return state.filter(u => {
-    // Completed tab shows ONLY done units.
-    // Any other tab hides done units entirely.
+    // Three-tab filter:
+    //   Active    = Not Started or In Progress (anything being worked, not blocked, not done)
+    //   On Hold   = Waiting on Part or Waiting on Vendor
+    //   Completed = Done only
     if (filter === 'Done') {
       if (u.status !== 'Done') return false;
+    } else if (filter === 'hold') {
+      if (u.status !== 'Waiting on Part' && u.status !== 'Waiting on Vendor') return false;
     } else if (filter === 'active') {
-      if (u.status === 'Done') return false;
+      if (u.status !== 'Not Started' && u.status !== 'In Progress') return false;
     } else {
       if (u.status !== filter) return false;
     }
