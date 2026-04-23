@@ -319,13 +319,20 @@
     height: 32px;
     border-radius: 8px;
     color: var(--ink-faint);
-    font-size: 14px;
-    opacity: 0.6;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.55;
+    transition: opacity 120ms, color 120ms, background 120ms;
   }
+  .item-part-btn:hover { opacity: 0.9; }
   .item-part-btn.active {
     opacity: 1;
     color: var(--warn);
+    background: var(--warn-soft);
   }
+  .item-part-btn svg, .add-item-row .part-toggle svg { width: 18px; height: 18px; display: block; }
+  .tag-glyph { width: 12px; height: 12px; display: inline-block; vertical-align: -2px; margin-right: 3px; opacity: 0.9; }
   .add-item-row {
     display: flex;
     gap: 6px;
@@ -349,7 +356,10 @@
     border: 1px solid var(--line);
     background: var(--surface-2);
     color: var(--ink-faint);
-    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 120ms, background 120ms, border-color 120ms;
   }
   .add-item-row .part-toggle.active {
     background: var(--warn-soft);
@@ -1496,7 +1506,7 @@ function render() {
 
           <div class="add-item-row">
             <input type="text" placeholder="Add open item…" data-add-input />
-            <button class="part-toggle" data-part-toggle aria-label="Mark as missing part" title="Toggle: needs a part">🔧</button>
+            <button class="part-toggle" data-part-toggle aria-label="Tag as needing a part" title="Tag: needs a part"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41 12 22l-9-9V4h9l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"/></svg></button>
             <button data-add-btn>Add</button>
           </div>
           <input type="text" class="add-item-part-name" data-part-name placeholder="Part name (optional)…" />
@@ -1530,13 +1540,13 @@ function itemHtml(i, idx) {
       const inv = inventory.find(x => x.id === i.invId);
       if (inv) {
         const cls = invColor(inv.count);
-        partTag = `<span class="count-tag ${cls}" title="Live count for ${escapeHtml(inv.name)}">🔧 ${escapeHtml(inv.name)} · ${inv.count}</span>`;
+        partTag = `<span class="count-tag ${cls}" title="Live count for ${escapeHtml(inv.name)}"><svg class="tag-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41 12 22l-9-9V4h9l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"/></svg> ${escapeHtml(inv.name)} · ${inv.count}</span>`;
       } else {
         // linked item was deleted from inventory
-        partTag = `<span class="part-tag">🔧 ${escapeHtml(i.partName || 'part')}</span>`;
+        partTag = `<span class="part-tag"><svg class="tag-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41 12 22l-9-9V4h9l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"/></svg> ${escapeHtml(i.partName || 'part')}</span>`;
       }
     } else {
-      partTag = `<span class="part-tag" title="${escapeHtml(i.partName || 'Needs part')}">🔧 ${escapeHtml(i.partName || 'part')}</span>`;
+      partTag = `<span class="part-tag" title="${escapeHtml(i.partName || 'Needs part')}"><svg class="tag-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41 12 22l-9-9V4h9l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"/></svg> ${escapeHtml(i.partName || 'part')}</span>`;
     }
   }
   return `
@@ -1545,7 +1555,7 @@ function itemHtml(i, idx) {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
       </button>
       <div class="item-text">${escapeHtml(i.t)}${partTag}</div>
-      <button class="item-part-btn ${i.part ? 'active' : ''}" data-toggle-part aria-label="Toggle missing part" title="Mark / unmark as needing part">🔧</button>
+      <button class="item-part-btn ${i.part ? 'active' : ''}" data-toggle-part aria-label="Tag as needing a part" title="Tag: needs a part"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41 12 22l-9-9V4h9l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"/></svg></button>
       <button class="item-del" data-del aria-label="Delete item">×</button>
     </div>
   `;
