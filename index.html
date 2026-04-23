@@ -702,6 +702,20 @@
     font-weight: 500;
     font-size: 15px;
   }
+  .scan-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 12px 14px; margin-bottom: 14px;
+    background: linear-gradient(135deg, var(--blue-soft), #f3e7f5);
+    border: 1px solid var(--line); border-radius: 14px;
+    color: var(--blue); font: inherit; font-weight: 600; font-size: 14px;
+    cursor: pointer; transition: transform 0.08s ease, opacity 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .scan-btn:active { transform: scale(0.98); }
+  .scan-btn[disabled] { opacity: 0.6; cursor: default; }
+  .scan-btn.scanning .scan-icon { animation: scanspin 1s linear infinite; }
+  @keyframes scanspin { to { transform: rotate(360deg); } }
+  [data-theme="dark"] .scan-btn { background: linear-gradient(135deg, rgba(106,122,209,0.18), rgba(154,123,209,0.18)); color: #b6c0ef; }
   .btn-primary { background: var(--ink); color: white; }
   [data-theme="dark"] .btn-primary { color: var(--bg); }
   .btn-ghost { background: var(--surface-2); color: var(--ink-soft); border: 1px solid var(--line); }
@@ -1056,9 +1070,18 @@
 <div class="modal-backdrop" id="invEditModal">
   <div class="modal">
     <h2 id="invEditTitle">Edit Item</h2>
+    <button class="scan-btn" id="inv-scan-btn" type="button">
+      <svg class="scan-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <span id="inv-scan-label">Scan label</span>
+    </button>
+    <input id="inv-scan-input" type="file" accept="image/*" capture="environment" style="display:none;" />
     <div class="field">
       <label>Name</label>
       <input id="inv-name" type="text" placeholder="e.g. Blinds, Cabinet pulls…" />
+    </div>
+    <div class="field">
+      <label>Part number (optional)</label>
+      <input id="inv-part-number" type="text" placeholder="e.g. 469500, RP1740…" autocapitalize="characters" />
     </div>
     <div class="field">
       <label>Count</label>
@@ -2047,7 +2070,7 @@ function renderInventory() {
         ${groups[g].map(x => `
           <div class="inv-row" data-inv-id="${escapeHtml(x.id)}">
             <div class="inv-dot ${g}"></div>
-            <div class="inv-name">${escapeHtml(x.name)}${x.supplier ? ` <span style="font-size:12px;color:var(--ink-faint);">· ${escapeHtml(x.supplier)}</span>` : ''}</div>
+            <div class="inv-name">${escapeHtml(x.name)}${x.part_number ? ` <span style="font-size:11px;color:var(--ink-faint);font-weight:500;letter-spacing:0.02em;">#${escapeHtml(x.part_number)}</span>` : ''}${x.supplier ? ` <span style="font-size:12px;color:var(--ink-faint);">· ${escapeHtml(x.supplier)}</span>` : ''}</div>
             <div class="inv-count ${g}">${x.count}</div>
           </div>
         `).join('')}
@@ -2152,8 +2175,10 @@ function openInvEdit(inv) {
   document.getElementById('invEditTitle').textContent = inv ? `Edit ${inv.name}` : 'New Item';
   document.getElementById('inv-delete').style.display = inv ? '' : 'none';
   document.getElementById('inv-name').value = inv ? inv.name : '';
+  document.getElementById('inv-part-number').value = inv ? (inv.part_number || '') : '';
   document.getElementById('inv-count').value = inv ? inv.count : 0;
   document.getElementById('inv-supplier').value = inv ? (inv.supplier || '') : '';
+  resetScanBtn();
   invEditModal.classList.add('open');
 }
 function closeInvEdit() { invEditModal.classList.remove('open'); invEditingId = null; }
@@ -2167,8 +2192,9 @@ document.getElementById('inv-save').addEventListener('click', async () => {
   if (!name) { document.getElementById('inv-name').focus(); return; }
   const count = Math.max(0, parseInt(document.getElementById('inv-count').value, 10) || 0);
   const supplier = document.getElementById('inv-supplier').value.trim() || null;
+  const part_number = document.getElementById('inv-part-number').value.trim() || null;
   const id = invEditingId || invId();
-  await invUpsert({ id, name, count, supplier, status: 'normal' });
+  await invUpsert({ id, name, count, supplier, part_number, status: 'normal' });
   renderInventory();
   renderBanner();
   if (activeTab === 'units') render();
@@ -2181,6 +2207,59 @@ document.getElementById('inv-delete').addEventListener('click', async () => {
   if (!confirm(`Delete "${inv.name}"? This can't be undone.`)) return;
   await invDelete(invEditingId);
   closeInvEdit();
+});
+
+/* ---------- Scan-part-label ---------- */
+const scanBtn = document.getElementById('inv-scan-btn');
+const scanInput = document.getElementById('inv-scan-input');
+const scanLabel = document.getElementById('inv-scan-label');
+function resetScanBtn() {
+  scanBtn.classList.remove('scanning');
+  scanBtn.disabled = false;
+  scanLabel.textContent = 'Scan label';
+}
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+scanBtn.addEventListener('click', () => { if (!scanBtn.disabled) scanInput.click(); });
+scanInput.addEventListener('change', async () => {
+  const file = scanInput.files && scanInput.files[0];
+  scanInput.value = '';
+  if (!file) return;
+  scanBtn.classList.add('scanning');
+  scanBtn.disabled = true;
+  scanLabel.textContent = 'Reading label…';
+  try {
+    const dataUrl = await fileToBase64(file);
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/scan-part-label`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ imageBase64: dataUrl })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const nameEl = document.getElementById('inv-name');
+    const pnEl = document.getElementById('inv-part-number');
+    const supEl = document.getElementById('inv-supplier');
+    if (data.name && !nameEl.value.trim()) nameEl.value = data.name;
+    if (data.partNumber && !pnEl.value.trim()) pnEl.value = data.partNumber;
+    if (data.supplier && !supEl.value.trim()) supEl.value = data.supplier;
+    scanBtn.classList.remove('scanning');
+    scanLabel.textContent = (data.name || data.partNumber || data.supplier) ? '✓ Scanned — review & save' : 'Couldn\'t read label';
+    setTimeout(resetScanBtn, 2500);
+  } catch (e) {
+    console.warn('scan failed', e);
+    scanBtn.classList.remove('scanning');
+    scanLabel.textContent = 'Scan failed — enter manually';
+    setTimeout(resetScanBtn, 2500);
+  } finally {
+    scanBtn.disabled = false;
+  }
 });
 
 /* ---------- Inventory picker ---------- */
