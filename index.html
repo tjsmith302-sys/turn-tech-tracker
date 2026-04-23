@@ -392,6 +392,53 @@
   .meta .value { flex: 1; color: var(--ink); }
   .meta .value.empty { color: var(--ink-faint); font-style: italic; }
 
+  /* Urgency group headers */
+  .urgency-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 4px 6px;
+    margin-top: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--ink-soft);
+  }
+  .urgency-header:first-child { margin-top: 0; padding-top: 4px; }
+  .urgency-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+  }
+  .urgency-urgent .urgency-dot {
+    background: var(--stop);
+    box-shadow: 0 0 0 3px rgba(227, 92, 87, 0.18);
+  }
+  .urgency-soon .urgency-dot {
+    background: var(--warn);
+    box-shadow: 0 0 0 3px rgba(214, 138, 74, 0.18);
+  }
+  .urgency-later .urgency-dot {
+    background: var(--blue);
+    box-shadow: 0 0 0 3px rgba(106, 122, 209, 0.18);
+  }
+  .urgency-none .urgency-dot {
+    background: var(--ink-faint);
+    box-shadow: 0 0 0 3px rgba(154, 152, 174, 0.15);
+  }
+  .urgency-label { flex: 1; color: var(--ink); }
+  .urgency-urgent .urgency-label { color: var(--stop); }
+  .urgency-count {
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--surface-2);
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+  }
+
   /* Low-stock alert inside card meta */
   .low-stock-alert {
     display: flex;
@@ -1462,13 +1509,53 @@ function render() {
     return;
   }
 
-  root.innerHTML = units.map(u => {
+  // --- Sort and group by urgency (days until move-in) ---
+  // Completed tab: newest-finished first (most recent move-in descending, undated last)
+  // Everything else: most urgent first, bucketed into 4 groups
+  const bucketOf = (u) => {
+    const d = daysUntil(u.moveIn);
+    if (d === null) return 3;          // no date
+    if (d <= 1) return 0;              // overdue / today / tomorrow
+    if (d <= 7) return 1;              // this week
+    return 2;                          // later
+  };
+  const bucketLabels = [
+    'Overdue / Today',
+    'This week',
+    'Later',
+    'No move-in date',
+  ];
+
+  let grouped;
+  if (filter === 'Done') {
+    // single flat group, most recently due first (completed newest feels right)
+    const sorted = [...units].sort((a, b) => {
+      const da = daysUntil(a.moveIn);
+      const db = daysUntil(b.moveIn);
+      if (da === null && db === null) return 0;
+      if (da === null) return 1;
+      if (db === null) return -1;
+      return db - da; // descending
+    });
+    grouped = [{ label: null, units: sorted }];
+  } else {
+    const buckets = [[], [], [], []];
+    for (const u of units) buckets[bucketOf(u)].push(u);
+    // sort each bucket ascending by daysUntil (soonest first); undated bucket keeps insertion order
+    for (let i = 0; i < 3; i++) {
+      buckets[i].sort((a, b) => daysUntil(a.moveIn) - daysUntil(b.moveIn));
+    }
+    grouped = buckets
+      .map((us, i) => ({ label: bucketLabels[i], key: i, units: us }))
+      .filter(g => g.units.length > 0);
+  }
+
+  const renderCard = (u) => {
     const items = u.items || [];
     const open = items.filter(i => !i.d);
     const closed = items.filter(i => i.d);
     const total = items.length;
     const pct = total ? Math.round((closed.length / total) * 100) : 0;
-
     return `
       <article class="card" data-id="${escapeHtml(u.id)}">
         <div class="card-head">
@@ -1564,6 +1651,24 @@ function render() {
         </div>
       </article>
     `;
+  };
+
+  const groupClass = (key) => {
+    if (key === 0) return 'urgency-urgent';
+    if (key === 1) return 'urgency-soon';
+    if (key === 2) return 'urgency-later';
+    return 'urgency-none';
+  };
+
+  root.innerHTML = grouped.map(g => {
+    const header = g.label
+      ? `<div class="urgency-header ${groupClass(g.key)}">
+           <span class="urgency-dot"></span>
+           <span class="urgency-label">${g.label}</span>
+           <span class="urgency-count">${g.units.length}</span>
+         </div>`
+      : '';
+    return header + g.units.map(renderCard).join('');
   }).join('');
 }
 
