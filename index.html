@@ -30,8 +30,8 @@
     --done-soft: #e7e5f0;
     --blue: #6a7ad1;        /* periwinkle */
     --blue-soft: #e0e3f5;
-    --radius: 18px;
-    --radius-lg: 22px;
+    --radius: 16px;
+    --radius-lg: 16px;
     --shadow-sm: 0 1px 2px rgba(27,26,46,.04);
     --shadow: 0 2px 6px rgba(27,26,46,.05), 0 8px 24px rgba(27,26,46,.06);
     --shadow-lg: 0 8px 32px rgba(27,26,46,.10), 0 2px 8px rgba(27,26,46,.05);
@@ -110,12 +110,12 @@
     justify-content: center;
     width: 40px;
     height: 40px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #6a7ad1 0%, #9a7bd1 50%, #d68a7e 100%);
-    box-shadow: var(--shadow);
-    font-size: 22px;
+    border-radius: 12px;
+    background: var(--blue);
+    color: #fff;
     flex: 0 0 auto;
   }
+  .brand-mark svg { width: 22px; height: 22px; }
   header.top h1 span#summary {
     display: block;
     flex-basis: 100%;
@@ -138,7 +138,7 @@
     -webkit-backdrop-filter: blur(10px);
     color: var(--ink-soft);
   }
-  .sync.synced { background: var(--blue-soft); color: var(--blue); }
+  .sync.synced { display: none !important; }
   .sync.saving { background: var(--warn-soft); color: var(--warn); }
   .sync.offline { background: var(--stop-soft); color: var(--stop); }
   .theme-btn {
@@ -620,24 +620,21 @@
     position: fixed;
     bottom: calc(24px + env(safe-area-inset-bottom));
     right: 20px;
-    width: 62px;
-    height: 62px;
+    width: 56px;
+    height: 56px;
     border-radius: 999px;
-    background: linear-gradient(135deg, #6a7ad1 0%, #9a7bd1 55%, #d68a7e 100%);
+    background: var(--blue);
     color: #fff;
-    font-size: 30px;
+    font-size: 28px;
     font-weight: 400;
-    box-shadow: 0 8px 24px rgba(106, 122, 209, .35), 0 2px 6px rgba(27, 26, 46, .1);
+    box-shadow: 0 6px 18px rgba(27, 26, 46, .18);
     z-index: 10;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform .15s ease, box-shadow .15s ease;
+    transition: transform .15s ease;
   }
-  .fab:active {
-    transform: scale(0.96);
-    box-shadow: 0 4px 14px rgba(106, 122, 209, .3);
-  }
+  .fab:active { transform: scale(0.96); }
 
   /* ---------- Modal ---------- */
   .modal-backdrop {
@@ -705,17 +702,16 @@
   .scan-btn {
     display: flex; align-items: center; justify-content: center; gap: 8px;
     width: 100%; padding: 12px 14px; margin-bottom: 14px;
-    background: linear-gradient(135deg, var(--blue-soft), #f3e7f5);
-    border: 1px solid var(--line); border-radius: 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 12px;
     color: var(--blue); font: inherit; font-weight: 600; font-size: 14px;
     cursor: pointer; transition: transform 0.08s ease, opacity 0.15s ease;
     -webkit-tap-highlight-color: transparent;
   }
-  .scan-btn:active { transform: scale(0.98); }
-  .scan-btn[disabled] { opacity: 0.6; cursor: default; }
+  .scan-btn:active { transform: scale(0.98); background: var(--blue-soft); }
+  .scan-btn[disabled] { opacity: 0.7; cursor: default; }
   .scan-btn.scanning .scan-icon { animation: scanspin 1s linear infinite; }
   @keyframes scanspin { to { transform: rotate(360deg); } }
-  [data-theme="dark"] .scan-btn { background: linear-gradient(135deg, rgba(106,122,209,0.18), rgba(154,123,209,0.18)); color: #b6c0ef; }
   .btn-primary { background: var(--ink); color: white; }
   [data-theme="dark"] .btn-primary { color: var(--bg); }
   .btn-ghost { background: var(--surface-2); color: var(--ink-soft); border: 1px solid var(--line); }
@@ -980,7 +976,7 @@
 <div class="wrap">
   <header class="top">
     <h1>
-      <span class="brand-mark" aria-hidden="true">🏠</span>
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></span>
       <span class="brand-name">Aptreo</span>
       <span id="summary">—</span>
       <span id="syncStatus" class="sync" title="Sync status"></span>
@@ -1631,13 +1627,13 @@ function render() {
           return rows.length ? `<div class="meta">${rows.join('')}</div>` : '';
         })()}
 
-        <div class="progress-wrap">
+        ${pct > 0 ? `<div class="progress-wrap">
           <div class="progress-label">
             <span>Progress</span>
             <span>${closed.length}/${total} · ${pct}%</span>
           </div>
           <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-        </div>
+        </div>` : ''}
 
         <div class="items">
           <div class="items-head">
