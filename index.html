@@ -559,6 +559,251 @@
   /* subtle hand-drawn feel */
   .card { transform: rotate(-0.05deg); }
   .card:nth-child(even) { transform: rotate(0.05deg); }
+
+  /* ---------- Top tab nav ---------- */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin: 2px 0 12px;
+    padding: 4px;
+    background: var(--surface-2);
+    border-radius: 12px;
+  }
+  .tabs button {
+    flex: 1;
+    height: 38px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-soft);
+  }
+  .tabs button[aria-pressed="true"] {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--shadow);
+  }
+
+  /* ---------- Inventory ---------- */
+  .inv-banner {
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    background: var(--stop-soft);
+    color: var(--stop);
+    font-weight: 500;
+    display: none;
+  }
+  .inv-banner.show { display: block; }
+  .inv-group {
+    margin-bottom: 18px;
+  }
+  .inv-group-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 4px 8px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .inv-group.low .inv-group-head { color: var(--stop); }
+  .inv-group.med .inv-group-head { color: var(--warn); }
+  .inv-group.ok  .inv-group-head { color: var(--accent); }
+  .inv-group-head .count {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--ink-faint);
+  }
+  .inv-list {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .inv-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-top: 1px solid var(--line);
+    min-height: 52px;
+    background: var(--surface);
+  }
+  .inv-row:first-child { border-top: none; }
+  .inv-row:active { background: var(--surface-2); }
+  .inv-dot {
+    flex: 0 0 10px;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+  }
+  .inv-dot.low { background: var(--stop); }
+  .inv-dot.med { background: var(--warn); }
+  .inv-dot.ok  { background: var(--accent); }
+  .inv-name {
+    flex: 1;
+    font-size: 15px;
+    color: var(--ink);
+    word-break: break-word;
+  }
+  .inv-count {
+    font-size: 18px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    min-width: 28px;
+    text-align: right;
+  }
+  .inv-count.low { color: var(--stop); }
+  .inv-count.med { color: var(--warn); }
+  .inv-count.ok  { color: var(--accent); }
+  .inv-order-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: var(--blue-soft);
+    color: var(--blue);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+
+  /* Action sheet */
+  .sheet h3 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .sheet .sub {
+    font-size: 13px;
+    color: var(--ink-faint);
+    margin-bottom: 14px;
+  }
+  .qty-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .qty-btn {
+    width: 54px;
+    height: 54px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .qty-num {
+    font-size: 36px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    min-width: 70px;
+    text-align: center;
+    letter-spacing: -0.02em;
+  }
+  .sheet-action {
+    display: block;
+    width: 100%;
+    height: 48px;
+    border-radius: 10px;
+    margin-top: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    background: var(--surface-2);
+    color: var(--ink);
+    text-align: center;
+  }
+  .sheet-action.danger { color: var(--stop); }
+  .sheet-action.primary { background: var(--ink); color: var(--bg); }
+
+  /* Live count tag on unit item linked to inventory */
+  .count-tag {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+  }
+  .count-tag.low { background: var(--stop-soft); color: var(--stop); }
+  .count-tag.med { background: var(--warn-soft); color: var(--warn); }
+  .count-tag.ok  { background: var(--accent-soft); color: var(--accent); }
+
+  /* Inventory picker list inside modal */
+  .picker-search {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    outline: none;
+    margin-bottom: 10px;
+    font-size: 15px;
+  }
+  .picker-list {
+    max-height: 46vh;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .picker-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--line);
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .picker-row:first-child { border-top: none; }
+  .picker-row:active { background: var(--surface-2); }
+  .picker-empty {
+    padding: 18px;
+    text-align: center;
+    color: var(--ink-faint);
+    font-size: 13px;
+  }
+  .picker-new {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    background: var(--surface-2);
+  }
+  .picker-new input {
+    width: 100%;
+    height: 38px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    outline: none;
+    font-size: 14px;
+  }
+  .picker-new .picker-new-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .picker-new .picker-new-row input { flex: 1; }
+  .picker-new button {
+    flex: 0 0 auto;
+    padding: 0 14px;
+    height: 38px;
+    border-radius: 8px;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 14px;
+  }
 </style>
 </head>
 <body>
@@ -573,22 +818,40 @@
     <button class="theme-btn" id="themeBtn" aria-label="Toggle dark mode">🌙</button>
   </header>
 
-  <div class="controls">
-    <input class="search" id="search" type="search" placeholder="Search unit, item, blocker…" />
-    <div class="filters" id="filters">
-      <button class="chip" data-filter="active" aria-pressed="true">Active</button>
-      <button class="chip" data-filter="Not Started" aria-pressed="false">Not Started</button>
-      <button class="chip" data-filter="In Progress" aria-pressed="false">In Progress</button>
-      <button class="chip" data-filter="Waiting on Part" aria-pressed="false">Waiting on Part</button>
-      <button class="chip" data-filter="Waiting on Vendor" aria-pressed="false">Waiting on Vendor</button>
-      <button class="chip" data-filter="Done" aria-pressed="false">Completed</button>
-    </div>
-  </div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="units" aria-pressed="true">Units</button>
+    <button data-tab="inventory" aria-pressed="false">Inventory</button>
+  </nav>
 
-  <div class="cards" id="cards"></div>
+  <!-- Units view -->
+  <section id="view-units">
+    <div class="controls">
+      <input class="search" id="search" type="search" placeholder="Search unit, item, blocker…" />
+      <div class="filters" id="filters">
+        <button class="chip" data-filter="active" aria-pressed="true">Active</button>
+        <button class="chip" data-filter="Not Started" aria-pressed="false">Not Started</button>
+        <button class="chip" data-filter="In Progress" aria-pressed="false">In Progress</button>
+        <button class="chip" data-filter="Waiting on Part" aria-pressed="false">Waiting on Part</button>
+        <button class="chip" data-filter="Waiting on Vendor" aria-pressed="false">Waiting on Vendor</button>
+        <button class="chip" data-filter="Done" aria-pressed="false">Completed</button>
+      </div>
+    </div>
+
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <!-- Inventory view -->
+  <section id="view-inventory" style="display:none;">
+    <div class="inv-banner" id="invBanner"></div>
+    <div class="controls">
+      <input class="search" id="invSearch" type="search" placeholder="Search inventory…" />
+    </div>
+    <div id="invList"></div>
+  </section>
 </div>
 
 <button class="fab" id="addUnitBtn" aria-label="Add unit">＋</button>
+<button class="fab" id="addInvBtn" aria-label="Add inventory item" style="display:none;">＋</button>
 
 <!-- Edit unit modal -->
 <div class="modal-backdrop" id="unitModal">
@@ -633,6 +896,76 @@
       <button class="btn-danger" id="f-delete">Delete</button>
       <button class="btn-primary" id="f-save">Save</button>
     </div>
+  </div>
+</div>
+
+<!-- Inventory item edit modal -->
+<div class="modal-backdrop" id="invEditModal">
+  <div class="modal">
+    <h2 id="invEditTitle">Edit Item</h2>
+    <div class="field">
+      <label>Name</label>
+      <input id="inv-name" type="text" placeholder="e.g. Blinds, Cabinet pulls…" />
+    </div>
+    <div class="field">
+      <label>Count</label>
+      <input id="inv-count" type="number" inputmode="numeric" min="0" step="1" />
+    </div>
+    <div class="field">
+      <label>Supplier (optional)</label>
+      <input id="inv-supplier" type="text" placeholder="Shop, vendor, store…" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="inv-cancel">Cancel</button>
+      <button class="btn-danger" id="inv-delete">Delete</button>
+      <button class="btn-primary" id="inv-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Inventory row action sheet -->
+<div class="modal-backdrop" id="invSheet">
+  <div class="modal sheet">
+    <h3 id="sheet-name">Item</h3>
+    <div class="sub" id="sheet-sub">—</div>
+    <div class="qty-row">
+      <button class="qty-btn" data-qty="-1">−</button>
+      <div class="qty-num" id="sheet-qty">0</div>
+      <button class="qty-btn" data-qty="1">+</button>
+    </div>
+    <button class="sheet-action" data-sheet="edit">Edit name / supplier</button>
+    <button class="sheet-action danger" data-sheet="delete">Delete item</button>
+    <button class="sheet-action" data-sheet="close">Close</button>
+  </div>
+</div>
+
+<!-- Inventory picker (for missing parts) -->
+<div class="modal-backdrop" id="pickerModal">
+  <div class="modal">
+    <h2 id="picker-title">Which part is missing?</h2>
+    <input class="picker-search" id="picker-search" type="search" placeholder="Search inventory…" />
+    <div class="picker-list" id="picker-list"></div>
+    <div class="picker-new">
+      <label style="font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.04em;">Not in list? Add it</label>
+      <div class="picker-new-row">
+        <input id="picker-new-name" type="text" placeholder="New item name…" />
+        <button id="picker-new-add">Add</button>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="btn-ghost" id="picker-cancel">Cancel</button>
+      <button class="btn-ghost" id="picker-skip">Skip (just flag)</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm ask-to-decrement -->
+<div class="modal-backdrop" id="decModal">
+  <div class="modal sheet">
+    <h3>Part used?</h3>
+    <div class="sub" id="dec-sub">—</div>
+    <button class="sheet-action primary" id="dec-yes">Yes, use one</button>
+    <button class="sheet-action" id="dec-no">No, just mark done</button>
   </div>
 </div>
 
@@ -778,7 +1111,104 @@ function scheduleCloudPush() {
   saveTimer = setTimeout(cloudPush, 400);
 }
 
+/* ---------- Inventory cloud sync ---------- */
+const INV_ENDPOINT = `${SUPABASE_URL}/rest/v1/inventory_items`;
+let inventory = [];           // [{id,name,count,supplier,status,...}]
+let invLastUpdatedAt = null;  // newest updated_at we've seen
+let invSaveTimers = {};       // per-id debounce
 
+function invColor(c) {
+  if (c <= 1) return 'low';
+  if (c <= 4) return 'med';
+  return 'ok';
+}
+function invId() {
+  return 'i_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+async function invLoad() {
+  try {
+    const res = await fetch(`${INV_ENDPOINT}?select=*&order=name.asc`, { headers: supaHeaders, cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    inventory = rows || [];
+    invLastUpdatedAt = inventory.reduce((max, r) => r.updated_at > max ? r.updated_at : max, '');
+    renderInventory();
+    renderBanner();
+    render(); // unit view may show linked count tags
+  } catch (e) {
+    console.warn('inv load failed', e);
+  }
+}
+
+async function invPoll() {
+  try {
+    const url = invLastUpdatedAt
+      ? `${INV_ENDPOINT}?select=*&updated_at=gt.${encodeURIComponent(invLastUpdatedAt)}`
+      : `${INV_ENDPOINT}?select=*`;
+    const res = await fetch(url, { headers: supaHeaders, cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    if (!rows || rows.length === 0) return;
+    // Merge updates
+    let changed = false;
+    rows.forEach(r => {
+      const idx = inventory.findIndex(x => x.id === r.id);
+      if (idx >= 0) inventory[idx] = r; else inventory.push(r);
+      if (!invLastUpdatedAt || r.updated_at > invLastUpdatedAt) invLastUpdatedAt = r.updated_at;
+      changed = true;
+    });
+    if (changed) {
+      renderInventory();
+      renderBanner();
+      if (activeTab === 'units') render();
+    }
+  } catch (e) {
+    // silent — unit poll will flip to offline if it matters
+  }
+}
+
+async function invUpsert(item) {
+  const payload = { ...item, updated_at: new Date().toISOString() };
+  try {
+    const res = await fetch(`${INV_ENDPOINT}?on_conflict=id`, {
+      method: 'POST',
+      headers: { ...supaHeaders, 'Prefer': 'resolution=merge-duplicates,return=representation' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    if (rows && rows[0]) {
+      const idx = inventory.findIndex(x => x.id === rows[0].id);
+      if (idx >= 0) inventory[idx] = rows[0]; else inventory.push(rows[0]);
+      if (!invLastUpdatedAt || rows[0].updated_at > invLastUpdatedAt) invLastUpdatedAt = rows[0].updated_at;
+    }
+  } catch (e) {
+    console.warn('inv upsert failed', e);
+  }
+}
+
+async function invDelete(id) {
+  inventory = inventory.filter(x => x.id !== id);
+  renderInventory();
+  try {
+    await fetch(`${INV_ENDPOINT}?id=eq.${id}`, { method: 'DELETE', headers: supaHeaders });
+  } catch (e) { console.warn('inv delete failed', e); }
+}
+
+/* ---------- Tab nav ---------- */
+let activeTab = 'units';
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('#tabs button').forEach(b => {
+    b.setAttribute('aria-pressed', b.dataset.tab === tab ? 'true' : 'false');
+  });
+  document.getElementById('view-units').style.display = tab === 'units' ? '' : 'none';
+  document.getElementById('view-inventory').style.display = tab === 'inventory' ? '' : 'none';
+  document.getElementById('addUnitBtn').style.display = tab === 'units' ? '' : 'none';
+  document.getElementById('addInvBtn').style.display = tab === 'inventory' ? '' : 'none';
+  if (tab === 'inventory') { renderInventory(); renderBanner(); }
+}
 
 /* ---------- Seed data ---------- */
 const SEED = [
@@ -1017,9 +1447,22 @@ function render() {
 }
 
 function itemHtml(i, idx) {
-  const partTag = i.part
-    ? `<span class="part-tag" title="${escapeHtml(i.partName || 'Needs part')}">🔧 ${escapeHtml(i.partName || 'part')}</span>`
-    : '';
+  let partTag = '';
+  if (i.part) {
+    // If linked, show live count from inventory
+    if (i.invId) {
+      const inv = inventory.find(x => x.id === i.invId);
+      if (inv) {
+        const cls = invColor(inv.count);
+        partTag = `<span class="count-tag ${cls}" title="Live count for ${escapeHtml(inv.name)}">🔧 ${escapeHtml(inv.name)} · ${inv.count}</span>`;
+      } else {
+        // linked item was deleted from inventory
+        partTag = `<span class="part-tag">🔧 ${escapeHtml(i.partName || 'part')}</span>`;
+      }
+    } else {
+      partTag = `<span class="part-tag" title="${escapeHtml(i.partName || 'Needs part')}">🔧 ${escapeHtml(i.partName || 'part')}</span>`;
+    }
+  }
   return `
     <div class="item ${i.d ? 'done' : ''} ${i.part ? 'needs-part' : ''}" data-idx="${idx}">
       <button class="check" data-toggle aria-label="Toggle done">
@@ -1090,7 +1533,20 @@ document.getElementById('cards').addEventListener('click', e => {
   const toggle = e.target.closest('[data-toggle]');
   if (toggle) {
     const idx = +toggle.closest('.item').dataset.idx;
-    unit.items[idx].d = !unit.items[idx].d;
+    const it = unit.items[idx];
+    const willBeDone = !it.d;
+    // If linking an item to inventory and marking done, ask-to-decrement
+    if (willBeDone && it.part && it.invId) {
+      const inv = inventory.find(x => x.id === it.invId);
+      if (inv && inv.count > 0) {
+        askDecrement(inv, () => {
+          inv.count = Math.max(0, inv.count - 1);
+          invUpsert({ id: inv.id, name: inv.name, count: inv.count, supplier: inv.supplier || null, status: inv.status || 'normal' });
+          renderBanner();
+        });
+      }
+    }
+    it.d = willBeDone;
     save(); render();
     return;
   }
@@ -1110,14 +1566,21 @@ document.getElementById('cards').addEventListener('click', e => {
     if (it.part) {
       it.part = false;
       delete it.partName;
+      delete it.invId;
+      autoFlipStatus(unit);
+      save(); render();
     } else {
-      const name = prompt('Part name (leave blank for generic):', it.partName || '');
-      if (name === null) return; // cancelled
-      it.part = true;
-      if (name.trim()) it.partName = name.trim();
+      // open inventory picker
+      openPicker((choice) => {
+        it.part = true;
+        if (choice) {
+          it.invId = choice.id;
+          it.partName = choice.name;
+        }
+        autoFlipStatus(unit);
+        save(); render();
+      });
     }
-    autoFlipStatus(unit);
-    save(); render();
     return;
   }
   // toggle the part flag on the add-row before clicking Add
@@ -1135,15 +1598,27 @@ document.getElementById('cards').addEventListener('click', e => {
     const t = input.value.trim();
     if (!t) return;
     const partOn = card.querySelector('[data-part-toggle]')?.classList.contains('active');
-    const partName = card.querySelector('[data-part-name]')?.value.trim();
+    const partNameTyped = card.querySelector('[data-part-name]')?.value.trim();
     const newItem = { t, d: false };
     if (partOn) {
-      newItem.part = true;
-      if (partName) newItem.partName = partName;
+      // Picker-first flow: open inventory picker, pre-fill search with typed part name
+      openPicker((choice) => {
+        newItem.part = true;
+        if (choice) {
+          newItem.invId = choice.id;
+          newItem.partName = choice.name;
+        } else if (partNameTyped) {
+          newItem.partName = partNameTyped;
+        }
+        unit.items.push(newItem);
+        autoFlipStatus(unit);
+        save(); render();
+      }, partNameTyped || '');
+    } else {
+      unit.items.push(newItem);
+      autoFlipStatus(unit);
+      save(); render();
     }
-    unit.items.push(newItem);
-    autoFlipStatus(unit);
-    save(); render();
     return;
   }
   // card actions
@@ -1299,11 +1774,266 @@ themeBtn.addEventListener('click', () => {
   applyTheme(next);
 });
 
+/* ---------- Inventory render ---------- */
+let invQuery = '';
+
+function renderInventory() {
+  const root = document.getElementById('invList');
+  if (!root) return;
+  const q = invQuery.trim().toLowerCase();
+  const filtered = inventory.filter(x => !q || (x.name || '').toLowerCase().includes(q));
+
+  if (filtered.length === 0) {
+    root.innerHTML = `<div class="empty">${inventory.length === 0 ? 'No inventory yet. Tap + to add.' : 'Nothing matches. Clear search.'}</div>`;
+    return;
+  }
+
+  // Sort by color group (low first) then name
+  const groups = { low: [], med: [], ok: [] };
+  filtered.forEach(x => groups[invColor(x.count)].push(x));
+  Object.keys(groups).forEach(k => groups[k].sort((a, b) => a.count - b.count || a.name.localeCompare(b.name)));
+
+  const groupLabel = { low: 'Low (0–1)', med: 'Medium (2–4)', ok: 'Stocked (5+)' };
+  root.innerHTML = ['low', 'med', 'ok'].filter(g => groups[g].length).map(g => `
+    <div class="inv-group ${g}">
+      <div class="inv-group-head">
+        <span>${groupLabel[g]}</span>
+        <span class="count">${groups[g].length}</span>
+      </div>
+      <div class="inv-list">
+        ${groups[g].map(x => `
+          <div class="inv-row" data-inv-id="${escapeHtml(x.id)}">
+            <div class="inv-dot ${g}"></div>
+            <div class="inv-name">${escapeHtml(x.name)}${x.supplier ? ` <span style="font-size:12px;color:var(--ink-faint);">· ${escapeHtml(x.supplier)}</span>` : ''}</div>
+            <div class="inv-count ${g}">${x.count}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderBanner() {
+  const banner = document.getElementById('invBanner');
+  if (!banner) return;
+  const lows = inventory.filter(x => x.count <= 1);
+  if (lows.length === 0) {
+    banner.classList.remove('show');
+    banner.textContent = '';
+    return;
+  }
+  const names = lows.slice(0, 3).map(x => x.name).join(', ');
+  const more = lows.length > 3 ? ` and ${lows.length - 3} more` : '';
+  banner.textContent = `${lows.length} item${lows.length === 1 ? '' : 's'} low: ${names}${more}`;
+  banner.classList.add('show');
+}
+
+/* ---------- Tabs wire-up ---------- */
+document.getElementById('tabs').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-tab]');
+  if (btn) switchTab(btn.dataset.tab);
+});
+document.getElementById('invSearch').addEventListener('input', e => {
+  invQuery = e.target.value;
+  renderInventory();
+});
+
+/* ---------- Inventory row click → action sheet ---------- */
+let sheetInvId = null;
+document.getElementById('invList').addEventListener('click', e => {
+  const row = e.target.closest('.inv-row');
+  if (!row) return;
+  openSheet(row.dataset.invId);
+});
+
+function openSheet(id) {
+  const inv = inventory.find(x => x.id === id);
+  if (!inv) return;
+  sheetInvId = id;
+  document.getElementById('sheet-name').textContent = inv.name;
+  document.getElementById('sheet-sub').textContent = inv.supplier ? `Supplier: ${inv.supplier}` : 'Tap + / − to adjust';
+  document.getElementById('sheet-qty').textContent = inv.count;
+  document.getElementById('invSheet').classList.add('open');
+}
+function closeSheet() {
+  document.getElementById('invSheet').classList.remove('open');
+  sheetInvId = null;
+}
+
+const invSheet = document.getElementById('invSheet');
+invSheet.addEventListener('click', e => { if (e.target === invSheet) closeSheet(); });
+// Attach action delegation to the inner .modal (stopPropagation on .modal would otherwise block backdrop clicks)
+invSheet.querySelector('.modal').addEventListener('click', e => e.stopPropagation());
+
+invSheet.querySelector('.modal').addEventListener('click', e => {
+  const qty = e.target.closest('[data-qty]');
+  if (qty && sheetInvId) {
+    const inv = inventory.find(x => x.id === sheetInvId);
+    if (!inv) return;
+    const delta = +qty.dataset.qty;
+    inv.count = Math.max(0, (inv.count || 0) + delta);
+    document.getElementById('sheet-qty').textContent = inv.count;
+    // Debounce the cloud save per id
+    clearTimeout(invSaveTimers[inv.id]);
+    invSaveTimers[inv.id] = setTimeout(() => {
+      invUpsert({ id: inv.id, name: inv.name, count: inv.count, supplier: inv.supplier || null, status: inv.status || 'normal' });
+    }, 350);
+    renderInventory();
+    renderBanner();
+    if (activeTab === 'units') render();
+    return;
+  }
+  const act = e.target.closest('[data-sheet]');
+  if (!act) return;
+  const a = act.dataset.sheet;
+  if (a === 'close') closeSheet();
+  if (a === 'edit') {
+    const inv = inventory.find(x => x.id === sheetInvId);
+    closeSheet();
+    if (inv) openInvEdit(inv);
+  }
+  if (a === 'delete') {
+    const inv = inventory.find(x => x.id === sheetInvId);
+    if (!inv) return;
+    if (!confirm(`Delete "${inv.name}"? This can't be undone.`)) return;
+    invDelete(inv.id);
+    closeSheet();
+  }
+});
+
+/* ---------- Inventory edit modal ---------- */
+let invEditingId = null;
+const invEditModal = document.getElementById('invEditModal');
+function openInvEdit(inv) {
+  invEditingId = inv ? inv.id : null;
+  document.getElementById('invEditTitle').textContent = inv ? `Edit ${inv.name}` : 'New Item';
+  document.getElementById('inv-delete').style.display = inv ? '' : 'none';
+  document.getElementById('inv-name').value = inv ? inv.name : '';
+  document.getElementById('inv-count').value = inv ? inv.count : 0;
+  document.getElementById('inv-supplier').value = inv ? (inv.supplier || '') : '';
+  invEditModal.classList.add('open');
+}
+function closeInvEdit() { invEditModal.classList.remove('open'); invEditingId = null; }
+
+invEditModal.addEventListener('click', e => { if (e.target === invEditModal) closeInvEdit(); });
+invEditModal.querySelector('.modal').addEventListener('click', e => e.stopPropagation());
+document.getElementById('inv-cancel').addEventListener('click', closeInvEdit);
+document.getElementById('addInvBtn').addEventListener('click', e => { e.preventDefault(); openInvEdit(null); });
+document.getElementById('inv-save').addEventListener('click', async () => {
+  const name = document.getElementById('inv-name').value.trim();
+  if (!name) { document.getElementById('inv-name').focus(); return; }
+  const count = Math.max(0, parseInt(document.getElementById('inv-count').value, 10) || 0);
+  const supplier = document.getElementById('inv-supplier').value.trim() || null;
+  const id = invEditingId || invId();
+  await invUpsert({ id, name, count, supplier, status: 'normal' });
+  renderInventory();
+  renderBanner();
+  if (activeTab === 'units') render();
+  closeInvEdit();
+});
+document.getElementById('inv-delete').addEventListener('click', async () => {
+  if (!invEditingId) return;
+  const inv = inventory.find(x => x.id === invEditingId);
+  if (!inv) return;
+  if (!confirm(`Delete "${inv.name}"? This can't be undone.`)) return;
+  await invDelete(invEditingId);
+  closeInvEdit();
+});
+
+/* ---------- Inventory picker ---------- */
+let pickerCb = null;
+const pickerModal = document.getElementById('pickerModal');
+function openPicker(cb, prefill = '') {
+  pickerCb = cb;
+  document.getElementById('picker-search').value = prefill;
+  document.getElementById('picker-new-name').value = prefill;
+  renderPickerList(prefill);
+  pickerModal.classList.add('open');
+}
+function closePicker() { pickerModal.classList.remove('open'); pickerCb = null; }
+
+function renderPickerList(q) {
+  const needle = (q || '').trim().toLowerCase();
+  const root = document.getElementById('picker-list');
+  const list = inventory
+    .filter(x => !needle || (x.name || '').toLowerCase().includes(needle))
+    .sort((a, b) => a.count - b.count || a.name.localeCompare(b.name));
+  if (list.length === 0) {
+    root.innerHTML = `<div class="picker-empty">No matches in inventory.</div>`;
+    return;
+  }
+  root.innerHTML = list.map(x => {
+    const cls = invColor(x.count);
+    return `<div class="picker-row" data-pick="${escapeHtml(x.id)}">
+      <div class="inv-dot ${cls}"></div>
+      <div class="inv-name">${escapeHtml(x.name)}</div>
+      <div class="inv-count ${cls}">${x.count}</div>
+    </div>`;
+  }).join('');
+}
+
+pickerModal.addEventListener('click', e => { if (e.target === pickerModal) closePicker(); });
+pickerModal.querySelector('.modal').addEventListener('click', e => e.stopPropagation());
+document.getElementById('picker-search').addEventListener('input', e => {
+  renderPickerList(e.target.value);
+  document.getElementById('picker-new-name').value = e.target.value;
+});
+document.getElementById('picker-list').addEventListener('click', e => {
+  const row = e.target.closest('[data-pick]');
+  if (!row) return;
+  const inv = inventory.find(x => x.id === row.dataset.pick);
+  const cb = pickerCb; closePicker();
+  if (cb) cb(inv || null);
+});
+document.getElementById('picker-new-add').addEventListener('click', async () => {
+  const name = document.getElementById('picker-new-name').value.trim();
+  if (!name) { document.getElementById('picker-new-name').focus(); return; }
+  const id = invId();
+  const item = { id, name, count: 0, supplier: null, status: 'normal' };
+  await invUpsert(item);
+  renderInventory();
+  renderBanner();
+  const cb = pickerCb; closePicker();
+  if (cb) cb(item);
+});
+document.getElementById('picker-cancel').addEventListener('click', () => { const cb = pickerCb; closePicker(); /* cancelled */ });
+document.getElementById('picker-skip').addEventListener('click', () => {
+  // User just wants to flag without linking
+  const cb = pickerCb; closePicker();
+  if (cb) cb(null);
+});
+
+/* ---------- Ask-to-decrement on mark-done ---------- */
+const decModal = document.getElementById('decModal');
+let decYesCb = null;
+function askDecrement(inv, onYes) {
+  decYesCb = onYes;
+  document.getElementById('dec-sub').textContent = `${inv.name} has ${inv.count}. Decrement to ${Math.max(0, inv.count - 1)}?`;
+  decModal.classList.add('open');
+}
+decModal.addEventListener('click', e => { if (e.target === decModal) { decModal.classList.remove('open'); decYesCb = null; } });
+decModal.querySelector('.modal').addEventListener('click', e => e.stopPropagation());
+document.getElementById('dec-yes').addEventListener('click', () => {
+  const cb = decYesCb; decYesCb = null; decModal.classList.remove('open');
+  if (cb) cb();
+});
+document.getElementById('dec-no').addEventListener('click', () => {
+  decYesCb = null; decModal.classList.remove('open');
+});
+
 /* ---------- Go ---------- */
 render();
 // Small delay so iOS Safari finishes painting before the first network call —
 // prevents a spurious "Offline" flash.
 setTimeout(() => { cloudLoad().then(startPolling); }, 150);
+// Inventory loads in parallel, then polls every 4s.
+setTimeout(() => {
+  invLoad();
+  setInterval(invPoll, 4000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') invPoll();
+  });
+}, 200);
 </script>
 </body>
 </html>
