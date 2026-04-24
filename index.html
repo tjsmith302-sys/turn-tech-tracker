@@ -398,6 +398,26 @@
   .status-vendor    { background: var(--blue-soft); color: var(--blue); }
   .status-done      { background: var(--done-soft); color: var(--done); text-decoration: none; }
 
+  /* Day-open chip (turn timer) */
+  .day-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    margin-top: 6px;
+    white-space: nowrap;
+  }
+  .day-chip.fresh { background: var(--done-soft); color: var(--ink-faint); }
+  .day-chip.warm  { background: var(--warn-soft);  color: var(--warn); }
+  .day-chip.stale { background: var(--stop-soft);  color: var(--stop); }
+  .day-chip.done  { background: var(--accent-soft); color: var(--accent); }
+
   .meta {
     padding: 0 14px 4px;
     font-size: 14px;
@@ -1457,7 +1477,8 @@ async function cloudLoad(attempt=0) {
       lastRemoteUpdatedAt = rows[0].updated_at;
       if (Array.isArray(remote) && remote.length > 0) {
         state = remote;
-        lastRemoteStateJSON = JSON.stringify(remote);
+        if (backfillTimestamps()) { saveLocal(); scheduleCloudPush(); }
+        lastRemoteStateJSON = JSON.stringify(state);
         saveLocal();
         render();
       } else {
@@ -1503,7 +1524,8 @@ async function cloudPoll() {
     }
     // Pull teammate's changes in.
     state = remote;
-    lastRemoteStateJSON = remoteJSON;
+    if (backfillTimestamps()) { scheduleCloudPush(); }
+    lastRemoteStateJSON = JSON.stringify(state);
     saveLocal();
     render();
     setSync('synced', 'Updated');
@@ -1780,6 +1802,7 @@ const SEED = [
 
 /* ---------- State ---------- */
 let state = load();
+backfillTimestamps(); // stamp any pre-existing units on first app boot
 let filter = 'active';
 let query = '';
 let editingId = null; // unit id being edited; null = new
@@ -1823,6 +1846,63 @@ function escapeHtml(s){
 
 function findUnit(id){ return state.find(u => u.id === id); }
 
+/* ---------- Turn timer helpers ---------- */
+function backfillTimestamps() {
+  // One-time: give every unit an openedAt if missing, and stamp completedAt
+  // on any unit already marked Done so the numbers line up today.
+  let touched = false;
+  const nowIso = new Date().toISOString();
+  for (const u of state) {
+    if (!u.openedAt) { u.openedAt = nowIso; touched = true; }
+    if (u.status === 'Done' && !u.completedAt) { u.completedAt = nowIso; touched = true; }
+  }
+  return touched;
+}
+function daysOpen(u) {
+  if (!u || !u.openedAt) return null;
+  const start = Date.parse(u.openedAt);
+  if (!isFinite(start)) return null;
+  const end = (u.status === 'Done' && u.completedAt) ? Date.parse(u.completedAt) : Date.now();
+  const days = Math.floor((end - start) / 86400000);
+  return Math.max(0, days);
+}
+function dayChip(u) {
+  const d = daysOpen(u);
+  if (d === null) return '';
+  if (u.status === 'Done') {
+    const label = d === 0 ? 'Turned same day' : `Turned in ${d}d`;
+    return `<span class="day-chip done">${label}</span>`;
+  }
+  let cls = 'fresh';
+  if (d >= 8) cls = 'stale';
+  else if (d >= 5) cls = 'warm';
+  const label = d === 0 ? 'Day 1' : `Day ${d + 1}`;
+  return `<span class="day-chip ${cls}">${label}</span>`;
+}
+function avgTurnDaysThisMonth() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const completedThisMonth = state.filter(u => {
+    if (u.status !== 'Done' || !u.completedAt || !u.openedAt) return false;
+    const c = new Date(u.completedAt);
+    return c.getFullYear() === y && c.getMonth() === m;
+  });
+  if (!completedThisMonth.length) return null;
+  const total = completedThisMonth.reduce((sum, u) => {
+    const d = (Date.parse(u.completedAt) - Date.parse(u.openedAt)) / 86400000;
+    return sum + Math.max(0, d);
+  }, 0);
+  return { avg: total / completedThisMonth.length, n: completedThisMonth.length };
+}
+function stampCompletionChange(u, prevStatus) {
+  // Call whenever a unit's status has been mutated, with prevStatus as the value before change.
+  if (u.status === 'Done' && prevStatus !== 'Done') {
+    u.completedAt = new Date().toISOString();
+  } else if (u.status !== 'Done' && prevStatus === 'Done') {
+    u.completedAt = null;
+  }
+}
+
 function filterUnits() {
   const q = query.trim().toLowerCase();
   return state.filter(u => {
@@ -1857,8 +1937,10 @@ function render() {
   const total = state.length;
   const done = state.filter(u => u.status === 'Done').length;
   const openItems = state.reduce((n,u) => n + (u.items||[]).filter(i => !i.d).length, 0);
+  const avg = avgTurnDaysThisMonth();
+  const avgPart = avg ? ` · avg turn ${avg.avg.toFixed(1)}d` : '';
   document.getElementById('summary').textContent =
-    `${total} unit${total===1?'':'s'} · ${openItems} open item${openItems===1?'':'s'} · ${done} done`;
+    `${total} unit${total===1?'':'s'} · ${openItems} open item${openItems===1?'':'s'} · ${done} done${avgPart}`;
 
   if (units.length === 0) {
     const msg = filter === 'Done'
@@ -1921,6 +2003,7 @@ function render() {
           <div class="unit-id">
             ${escapeHtml(u.id)}
             <small>${escapeHtml(u.category || 'Unit')}</small>
+            ${dayChip(u)}
           </div>
           <span class="status-pill ${statusClass(u.status)}">${escapeHtml(u.status)}</span>
         </div>
@@ -2246,13 +2329,17 @@ document.getElementById('cards').addEventListener('click', e => {
     const a = act.dataset.action;
     if (a === 'edit') openModal(unit);
     if (a === 'complete') {
+      const prev = unit.status;
       unit.status = 'Done';
+      stampCompletionChange(unit, prev);
       // Also mark every open item done so progress reads 100%.
       (unit.items || []).forEach(i => i.d = true);
       save(); render();
     }
     if (a === 'reopen') {
+      const prev = unit.status;
       unit.status = 'In Progress';
+      stampCompletionChange(unit, prev);
       save(); render();
     }
     if (a === 'duplicate') {
@@ -2260,6 +2347,8 @@ document.getElementById('cards').addEventListener('click', e => {
       copy.id = uniqueId(unit.id + '-copy');
       copy.status = 'Not Started';
       copy.items = (copy.items || []).map(i => ({ t: i.t, d: false }));
+      copy.openedAt = new Date().toISOString();
+      copy.completedAt = null;
       state.unshift(copy);
       save(); render();
     }
@@ -2396,7 +2485,9 @@ document.getElementById('f-save').addEventListener('click', () => {
     }
     u.id = newId;
     u.category = f.category.value.trim();
+    const prevStatus = u.status;
     u.status = f.status.value;
+    stampCompletionChange(u, prevStatus);
     u.blocker = readBlockersFromForm();
     u.next = f.next.value.trim();
     u.vendor = f.vendor.value.trim();
@@ -2407,15 +2498,19 @@ document.getElementById('f-save').addEventListener('click', () => {
       alert('That unit number already exists.');
       return;
     }
+    const nowIso = new Date().toISOString();
+    const initialStatus = f.status.value;
     const newUnit = {
       id: newId,
       category: f.category.value.trim(),
-      status: f.status.value,
+      status: initialStatus,
       blocker: readBlockersFromForm(),
       next: f.next.value.trim(),
       vendor: f.vendor.value.trim(),
       moveIn: f.moveIn.value || '',
-      items: []
+      items: [],
+      openedAt: nowIso,
+      completedAt: initialStatus === 'Done' ? nowIso : null
     };
     syncBlockersToItems(newUnit);
     state.unshift(newUnit);
