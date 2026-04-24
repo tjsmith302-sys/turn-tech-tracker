@@ -56,29 +56,28 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* ===== Wrought-iron gate loader ===== */
+  /* ===== Live oak gate loader ===== */
   #goturn-loader {
     position: fixed; inset: 0; background: var(--bg); z-index: 100;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 28px;
-    transition: opacity .5s .2s, visibility .5s .2s;
+    gap: 24px;
+    transition: opacity .6s .3s, visibility .6s .3s;
   }
   #goturn-loader.done { opacity: 0; visibility: hidden; pointer-events: none; }
-  #goturn-loader svg { width: 120px; height: 80px; }
-  #goturn-loader svg path, #goturn-loader svg line {
-    stroke: var(--accent); stroke-width: 1.2; fill: none;
-    stroke-dasharray: 120; stroke-dashoffset: 120;
-    animation: gtdraw 1.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  #goturn-loader .illus {
+    width: min(92vw, 520px);
+    aspect-ratio: 4 / 3;
+    background: url('./gate-oaks.jpg') center / contain no-repeat;
+    opacity: 0;
+    animation: gtillus 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    /* Feather the edges so JPEG background blends into dusk */
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 60%, transparent 100%);
+    mask-image: radial-gradient(ellipse at center, #000 60%, transparent 100%);
   }
-  #goturn-loader svg .p1 { animation-delay: 0s; }
-  #goturn-loader svg .p2 { animation-delay: 0.08s; }
-  #goturn-loader svg .p3 { animation-delay: 0.16s; }
-  #goturn-loader svg .p4 { animation-delay: 0.24s; }
-  #goturn-loader svg .p5 { animation-delay: 0.32s; }
-  #goturn-loader svg .p6 { animation-delay: 0.40s; }
-  #goturn-loader svg .p7 { animation-delay: 0.48s; }
-  #goturn-loader svg .p8 { animation-delay: 0.56s; }
-  @keyframes gtdraw { to { stroke-dashoffset: 0; } }
+  @keyframes gtillus {
+    0% { opacity: 0; transform: scale(1.02); }
+    100% { opacity: 1; transform: scale(1); }
+  }
   #goturn-loader .brand-word {
     font-family: var(--mono); font-size: 11px; letter-spacing: .28em;
     color: var(--ink-soft); opacity: 0; text-transform: uppercase;
@@ -982,18 +981,9 @@
 </head>
 <body>
 
-<!-- Wrought-iron gate loader -->
+<!-- Live oak gate loader -->
 <div id="goturn-loader" aria-hidden="true">
-  <svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
-    <line class="p1" x1="10" y1="70" x2="10" y2="20"/>
-    <line class="p2" x1="110" y1="70" x2="110" y2="20"/>
-    <line class="p3" x1="35" y1="70" x2="35" y2="30"/>
-    <line class="p4" x1="60" y1="70" x2="60" y2="25"/>
-    <line class="p5" x1="85" y1="70" x2="85" y2="30"/>
-    <path class="p6" d="M 10 20 Q 60 0 110 20"/>
-    <path class="p7" d="M 35 30 Q 60 15 85 30"/>
-    <line class="p8" x1="10" y1="70" x2="110" y2="70"/>
-  </svg>
+  <div class="illus" role="img" aria-label="Goturn"></div>
   <div class="brand-word">GOTURN</div>
 </div>
 
@@ -2054,7 +2044,7 @@ window.addEventListener('load', () => {
   setTimeout(() => {
     const l = document.getElementById('goturn-loader');
     if (l) l.classList.add('done');
-  }, 2100);
+  }, 2400);
 });
 
 /* ---------- Inventory render ---------- */
