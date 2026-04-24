@@ -969,14 +969,59 @@
   .inv-count.med { color: var(--warn); }
   .inv-count.ok  { color: var(--accent); }
   .inv-order-tag {
+    display: inline-block;
     font-size: 10px;
-    padding: 2px 6px;
+    padding: 2px 8px;
     border-radius: 999px;
-    background: var(--blue-soft);
-    color: var(--blue);
+    background: var(--accent-soft);
+    color: var(--accent);
     font-weight: 500;
     letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    margin: 0 0 4px;
   }
+  .inv-order-tag.overdue {
+    background: var(--stop-soft);
+    color: var(--stop);
+  }
+  .inv-row.onorder { background: linear-gradient(90deg, var(--accent-soft) 0%, var(--surface) 40%); }
+  .inv-row.onorder.overdue { background: linear-gradient(90deg, var(--stop-soft) 0%, var(--surface) 55%); }
+  .order-window-row {
+    display: flex;
+    gap: 10px;
+    margin: 14px 0 6px;
+  }
+  .order-window-btn {
+    flex: 1;
+    padding: 14px 10px;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .order-window-btn:active { transform: scale(0.98); }
+  .order-window-btn.on {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .order-window-btn .sub {
+    display: block;
+    font-family: var(--font);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-top: 4px;
+  }
+  .order-window-btn.on .sub { color: var(--accent); }
 
   /* Action sheet */
   .sheet h3 {
@@ -1286,9 +1331,53 @@
       <div class="qty-num" id="sheet-qty">0</div>
       <button class="qty-btn" data-qty="1">+</button>
     </div>
+    <button class="sheet-action" id="sheet-order-btn" data-sheet="order" style="display:none;">Mark on order</button>
+    <button class="sheet-action" id="sheet-arrived-btn" data-sheet="arrived" style="display:none;">Did it arrive?</button>
+    <button class="sheet-action" id="sheet-cancel-order-btn" data-sheet="cancel-order" style="display:none;">Cancel order</button>
     <button class="sheet-action" data-sheet="edit">Edit name / supplier</button>
     <button class="sheet-action danger" data-sheet="delete">Delete item</button>
     <button class="sheet-action" data-sheet="close">Close</button>
+  </div>
+</div>
+
+<!-- Order modal: pick 24 or 48 hour window + optional qty on way -->
+<div class="modal-backdrop" id="orderModal">
+  <div class="modal">
+    <h2 id="order-title">Mark on order</h2>
+    <div class="sub" id="order-sub" style="font-size:13px;color:var(--ink-faint);margin-bottom:4px;">Pick a check-in window.</div>
+    <div class="order-window-row">
+      <button type="button" class="order-window-btn" data-window="24">24<span class="sub">hours</span></button>
+      <button type="button" class="order-window-btn on" data-window="48">48<span class="sub">hours</span></button>
+    </div>
+    <div class="field">
+      <label>How many on the way (optional)</label>
+      <input id="order-qty" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g. 3" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="order-cancel">Cancel</button>
+      <button class="btn-primary" id="order-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Arrived modal: did it arrive? qty received OR re-snooze -->
+<div class="modal-backdrop" id="arrivedModal">
+  <div class="modal">
+    <h2 id="arrived-title">Did it arrive?</h2>
+    <div class="sub" id="arrived-sub" style="font-size:13px;color:var(--ink-faint);margin-bottom:14px;">—</div>
+    <div class="field">
+      <label>How many arrived</label>
+      <input id="arrived-qty" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g. 3" />
+    </div>
+    <button class="sheet-action" id="arrived-yes" style="background:var(--accent-soft);color:var(--accent);margin-top:6px;">Yes — add to inventory</button>
+    <div style="font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.04em;margin:16px 4px 6px;">Not yet — remind me in</div>
+    <div class="order-window-row" style="margin-top:4px;">
+      <button type="button" class="order-window-btn" data-resnooze="24">24<span class="sub">hours</span></button>
+      <button type="button" class="order-window-btn" data-resnooze="48">48<span class="sub">hours</span></button>
+    </div>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="btn-ghost" id="arrived-close">Close</button>
+    </div>
   </div>
 </div>
 
@@ -1477,6 +1566,57 @@ function invColor(c) {
 }
 function invId() {
   return 'i_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+/* ---------- Order state (stored in inv.status as "onorder:{json}") ---------- */
+function parseOrder(inv) {
+  if (!inv || !inv.status || typeof inv.status !== 'string') return null;
+  if (!inv.status.startsWith('onorder:')) return null;
+  try {
+    const raw = inv.status.slice(8);
+    const o = JSON.parse(raw);
+    if (!o.dueAt) return null;
+    const now = Date.now();
+    const due = Date.parse(o.dueAt);
+    return {
+      qtyOnWay: Number(o.qtyOnWay) || 0,
+      dueAt: o.dueAt,
+      markedAt: o.markedAt || null,
+      windowHours: Number(o.windowHours) || 48,
+      isOverdue: isFinite(due) && now > due,
+      msRemaining: isFinite(due) ? (due - now) : 0
+    };
+  } catch (e) { return null; }
+}
+function encodeOrder(o) {
+  return 'onorder:' + JSON.stringify({
+    qtyOnWay: o.qtyOnWay || 0,
+    dueAt: o.dueAt,
+    markedAt: o.markedAt || new Date().toISOString(),
+    windowHours: o.windowHours || 48
+  });
+}
+function formatDue(order) {
+  if (!order) return '';
+  if (order.isOverdue) return 'Overdue — check arrival';
+  const ms = order.msRemaining;
+  const hours = Math.max(0, Math.round(ms / 3600000));
+  if (hours < 1) return 'Due within the hour';
+  if (hours < 24) return `Due in ${hours}h`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? 'Due tomorrow' : `Due in ${days}d`;
+}
+function saveOrderFor(inv, orderObj) {
+  inv.status = encodeOrder(orderObj);
+  invUpsert({ id: inv.id, name: inv.name, count: inv.count, supplier: inv.supplier || null, status: inv.status });
+  renderInventory();
+  renderBanner();
+}
+function clearOrderFor(inv) {
+  inv.status = 'normal';
+  invUpsert({ id: inv.id, name: inv.name, count: inv.count, supplier: inv.supplier || null, status: 'normal' });
+  renderInventory();
+  renderBanner();
 }
 
 async function invLoad() {
@@ -2335,29 +2475,61 @@ function renderInventory() {
     return;
   }
 
-  // Sort by color group (low first) then name
+  // Separate on-order items into their own top section, then low/med/ok
+  const onOrder = filtered.filter(x => parseOrder(x));
+  const onOrderIds = new Set(onOrder.map(x => x.id));
   const groups = { low: [], med: [], ok: [] };
-  filtered.forEach(x => groups[invColor(x.count)].push(x));
+  filtered.filter(x => !onOrderIds.has(x.id)).forEach(x => groups[invColor(x.count)].push(x));
   Object.keys(groups).forEach(k => groups[k].sort((a, b) => a.count - b.count || a.name.localeCompare(b.name)));
+  // Overdue first within on-order
+  onOrder.sort((a, b) => {
+    const oa = parseOrder(a), ob = parseOrder(b);
+    if (oa.isOverdue !== ob.isOverdue) return oa.isOverdue ? -1 : 1;
+    return oa.msRemaining - ob.msRemaining;
+  });
+
+  const rowHtml = (x, gClass) => {
+    const order = parseOrder(x);
+    const rowClass = order ? `inv-row onorder${order.isOverdue ? ' overdue' : ''}` : 'inv-row';
+    const dotClass = order ? (order.isOverdue ? 'low' : 'ok') : gClass;
+    const tag = order
+      ? `<span class="inv-order-tag${order.isOverdue ? ' overdue' : ''}">${formatDue(order)}</span>`
+      : '';
+    return `
+      <div class="${rowClass}" data-inv-id="${escapeHtml(x.id)}">
+        <div class="inv-dot ${dotClass}"></div>
+        <div class="inv-name">${tag ? `${tag}<br/>` : ''}${escapeHtml(x.name)}${x.part_number ? ` <span style="font-size:11px;color:var(--ink-faint);font-weight:500;letter-spacing:0.02em;">#${escapeHtml(x.part_number)}</span>` : ''}${x.supplier ? ` <span style="font-size:12px;color:var(--ink-faint);">· ${escapeHtml(x.supplier)}</span>` : ''}</div>
+        <div class="inv-count ${gClass}">${x.count}</div>
+      </div>`;
+  };
 
   const groupLabel = { low: 'Low (0–1)', med: 'Medium (2–4)', ok: 'Stocked (5+)' };
-  root.innerHTML = ['low', 'med', 'ok'].filter(g => groups[g].length).map(g => `
+  let html = '';
+  if (onOrder.length) {
+    const overdueCount = onOrder.filter(x => parseOrder(x).isOverdue).length;
+    html += `
+      <div class="inv-group ${overdueCount ? 'low' : 'ok'}">
+        <div class="inv-group-head">
+          <span>On order${overdueCount ? ` · ${overdueCount} overdue` : ''}</span>
+          <span class="count">${onOrder.length}</span>
+        </div>
+        <div class="inv-list">
+          ${onOrder.map(x => rowHtml(x, invColor(x.count))).join('')}
+        </div>
+      </div>`;
+  }
+  html += ['low', 'med', 'ok'].filter(g => groups[g].length).map(g => `
     <div class="inv-group ${g}">
       <div class="inv-group-head">
         <span>${groupLabel[g]}</span>
         <span class="count">${groups[g].length}</span>
       </div>
       <div class="inv-list">
-        ${groups[g].map(x => `
-          <div class="inv-row" data-inv-id="${escapeHtml(x.id)}">
-            <div class="inv-dot ${g}"></div>
-            <div class="inv-name">${escapeHtml(x.name)}${x.part_number ? ` <span style="font-size:11px;color:var(--ink-faint);font-weight:500;letter-spacing:0.02em;">#${escapeHtml(x.part_number)}</span>` : ''}${x.supplier ? ` <span style="font-size:12px;color:var(--ink-faint);">· ${escapeHtml(x.supplier)}</span>` : ''}</div>
-            <div class="inv-count ${g}">${x.count}</div>
-          </div>
-        `).join('')}
+        ${groups[g].map(x => rowHtml(x, g)).join('')}
       </div>
     </div>
   `).join('');
+  root.innerHTML = html;
 
   applyRise(root, '.inv-row', { stagger: 35, max: 14 });
 }
@@ -2365,7 +2537,16 @@ function renderInventory() {
 function renderBanner() {
   const banner = document.getElementById('invBanner');
   if (!banner) return;
-  const lows = inventory.filter(x => x.count <= 1);
+  // Overdue on-order items take priority over raw low-stock
+  const overdue = inventory.filter(x => { const o = parseOrder(x); return o && o.isOverdue; });
+  if (overdue.length) {
+    const names = overdue.slice(0, 3).map(x => x.name).join(', ');
+    const more = overdue.length > 3 ? ` and ${overdue.length - 3} more` : '';
+    banner.textContent = `${overdue.length} order${overdue.length === 1 ? '' : 's'} overdue: ${names}${more} — tap to check`;
+    banner.classList.add('show');
+    return;
+  }
+  const lows = inventory.filter(x => x.count <= 1 && !parseOrder(x));
   if (lows.length === 0) {
     banner.classList.remove('show');
     banner.textContent = '';
@@ -2386,6 +2567,14 @@ document.getElementById('invSearch').addEventListener('input', e => {
   invQuery = e.target.value;
   renderInventory();
 });
+// Tap banner → open the first overdue order (or first low-stock item) directly
+document.getElementById('invBanner').addEventListener('click', () => {
+  const overdue = inventory.find(x => { const o = parseOrder(x); return o && o.isOverdue; });
+  if (overdue) { openArrivedModal(overdue); return; }
+  const firstLow = inventory.find(x => (x.count || 0) <= 1 && !parseOrder(x));
+  if (firstLow) openSheet(firstLow.id);
+});
+document.getElementById('invBanner').style.cursor = 'pointer';
 
 /* ---------- Inventory row click → action sheet ---------- */
 let sheetInvId = null;
@@ -2400,8 +2589,16 @@ function openSheet(id) {
   if (!inv) return;
   sheetInvId = id;
   document.getElementById('sheet-name').textContent = inv.name;
-  document.getElementById('sheet-sub').textContent = inv.supplier ? `Supplier: ${inv.supplier}` : 'Tap + / − to adjust';
+  const order = parseOrder(inv);
+  let sub = inv.supplier ? `Supplier: ${inv.supplier}` : 'Tap + / − to adjust';
+  if (order) sub = `${formatDue(order)}${order.qtyOnWay ? ` · ${order.qtyOnWay} on the way` : ''}`;
+  document.getElementById('sheet-sub').textContent = sub;
   document.getElementById('sheet-qty').textContent = inv.count;
+  // Conditional buttons: order only for low+not-ordered, arrived+cancel only when ordered
+  const isLow = invColor(inv.count) === 'low';
+  document.getElementById('sheet-order-btn').style.display = (!order && isLow) ? '' : 'none';
+  document.getElementById('sheet-arrived-btn').style.display = order ? '' : 'none';
+  document.getElementById('sheet-cancel-order-btn').style.display = order ? '' : 'none';
   document.getElementById('invSheet').classList.add('open');
 }
 function closeSheet() {
@@ -2448,6 +2645,105 @@ invSheet.querySelector('.modal').addEventListener('click', e => {
     invDelete(inv.id);
     closeSheet();
   }
+  if (a === 'order') {
+    const inv = inventory.find(x => x.id === sheetInvId);
+    closeSheet();
+    if (inv) openOrderModal(inv);
+  }
+  if (a === 'arrived') {
+    const inv = inventory.find(x => x.id === sheetInvId);
+    closeSheet();
+    if (inv) openArrivedModal(inv);
+  }
+  if (a === 'cancel-order') {
+    const inv = inventory.find(x => x.id === sheetInvId);
+    if (!inv) return;
+    if (!confirm(`Cancel the order for "${inv.name}"?`)) return;
+    clearOrderFor(inv);
+    closeSheet();
+  }
+});
+
+/* ---------- Order modal ---------- */
+let orderCtxId = null;
+let orderWindow = 48;
+const orderModal = document.getElementById('orderModal');
+function openOrderModal(inv) {
+  orderCtxId = inv.id;
+  orderWindow = 48;
+  document.getElementById('order-title').textContent = `Mark on order: ${inv.name}`;
+  document.getElementById('order-sub').textContent = 'We\u2019ll nudge you when the window\u2019s up.';
+  document.getElementById('order-qty').value = '';
+  orderModal.querySelectorAll('.order-window-btn').forEach(b => {
+    b.classList.toggle('on', Number(b.dataset.window) === 48);
+  });
+  orderModal.classList.add('open');
+}
+function closeOrderModal() { orderModal.classList.remove('open'); orderCtxId = null; }
+orderModal.addEventListener('click', e => { if (e.target === orderModal) closeOrderModal(); });
+orderModal.querySelector('.modal').addEventListener('click', e => e.stopPropagation());
+document.getElementById('order-cancel').addEventListener('click', closeOrderModal);
+orderModal.querySelectorAll('.order-window-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    orderWindow = Number(btn.dataset.window);
+    orderModal.querySelectorAll('.order-window-btn').forEach(b => {
+      b.classList.toggle('on', Number(b.dataset.window) === orderWindow);
+    });
+  });
+});
+document.getElementById('order-save').addEventListener('click', () => {
+  const inv = inventory.find(x => x.id === orderCtxId);
+  if (!inv) { closeOrderModal(); return; }
+  const qtyRaw = document.getElementById('order-qty').value;
+  const qty = qtyRaw ? Math.max(0, parseInt(qtyRaw, 10) || 0) : 0;
+  const due = new Date(Date.now() + orderWindow * 3600 * 1000).toISOString();
+  saveOrderFor(inv, { qtyOnWay: qty, dueAt: due, markedAt: new Date().toISOString(), windowHours: orderWindow });
+  closeOrderModal();
+});
+
+/* ---------- Arrived modal ---------- */
+let arrivedCtxId = null;
+const arrivedModal = document.getElementById('arrivedModal');
+function openArrivedModal(inv) {
+  arrivedCtxId = inv.id;
+  const order = parseOrder(inv);
+  document.getElementById('arrived-title').textContent = `Did it arrive: ${inv.name}?`;
+  const sub = order
+    ? `${order.isOverdue ? 'Overdue' : formatDue(order)}${order.qtyOnWay ? ` · ${order.qtyOnWay} expected` : ''}`
+    : '';
+  document.getElementById('arrived-sub').textContent = sub;
+  document.getElementById('arrived-qty').value = order && order.qtyOnWay ? String(order.qtyOnWay) : '';
+  arrivedModal.querySelectorAll('.order-window-btn').forEach(b => b.classList.remove('on'));
+  arrivedModal.classList.add('open');
+}
+function closeArrivedModal() { arrivedModal.classList.remove('open'); arrivedCtxId = null; }
+arrivedModal.addEventListener('click', e => { if (e.target === arrivedModal) closeArrivedModal(); });
+arrivedModal.querySelector('.modal').addEventListener('click', e => e.stopPropagation());
+document.getElementById('arrived-close').addEventListener('click', closeArrivedModal);
+document.getElementById('arrived-yes').addEventListener('click', () => {
+  const inv = inventory.find(x => x.id === arrivedCtxId);
+  if (!inv) { closeArrivedModal(); return; }
+  const qtyRaw = document.getElementById('arrived-qty').value;
+  const qty = Math.max(1, parseInt(qtyRaw, 10) || 0);
+  if (!qty) { alert('Enter how many arrived.'); return; }
+  inv.count = (inv.count || 0) + qty;
+  inv.status = 'normal';
+  invUpsert({ id: inv.id, name: inv.name, count: inv.count, supplier: inv.supplier || null, status: 'normal' });
+  closeArrivedModal();
+  renderInventory();
+  renderBanner();
+  if (activeTab === 'units') render();
+});
+arrivedModal.querySelectorAll('.order-window-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const inv = inventory.find(x => x.id === arrivedCtxId);
+    if (!inv) { closeArrivedModal(); return; }
+    const hrs = Number(btn.dataset.resnooze) || 48;
+    const prev = parseOrder(inv) || {};
+    const due = new Date(Date.now() + hrs * 3600 * 1000).toISOString();
+    saveOrderFor(inv, { qtyOnWay: prev.qtyOnWay || 0, dueAt: due, markedAt: prev.markedAt || new Date().toISOString(), windowHours: hrs });
+    closeArrivedModal();
+  });
 });
 
 /* ---------- Inventory edit modal ---------- */
