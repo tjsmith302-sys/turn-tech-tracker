@@ -1618,10 +1618,9 @@
         <button class="chip" data-filter="Done" aria-pressed="false">Completed</button>
       </div>
       <div class="controls-row-bottom">
-        <button type="button" class="stages-link" id="openStagesBtn">Stages</button>
         <div class="view-toggle" id="unitsViewToggle" role="group" aria-label="Units view mode">
           <button type="button" data-mode="cards" aria-pressed="true">Cards</button>
-          <button type="button" data-mode="matrix" aria-pressed="false">Matrix</button>
+          <button type="button" data-mode="matrix" aria-pressed="false">White Board</button>
         </div>
       </div>
     </div>
@@ -3356,7 +3355,12 @@ document.getElementById('stg-new').addEventListener('click', () => openStageEdit
 document.getElementById('stg-close').addEventListener('click', closeStageManager);
 stgModal.addEventListener('click', e => { if (e.target === stgModal) closeStageManager(); });
 stgModal.querySelector('.modal').addEventListener('click', e => e.stopPropagation());
-document.getElementById('openStagesBtn').addEventListener('click', openStageManager);
+// Stages link was replaced by the simpler White Board (fixed columns), but we keep the
+// stage manager wiring in place in case we re-introduce it. Guard against missing element.
+(function () {
+  const el = document.getElementById('openStagesBtn');
+  if (el) el.addEventListener('click', openStageManager);
+})();
 
 function openStageEditor(id) {
   const s = id ? stages.find(x => x.id === id) : null;
@@ -3421,7 +3425,26 @@ document.getElementById('unitsViewToggle').addEventListener('click', (e) => {
   render();
 });
 
-/* ---------- Matrix renderer ---------- */
+/* ---------- White Board renderer ---------- */
+// Fixed columns the manager wants to scan: dates + 3 work categories.
+// Categories are matched against punch-item text via keyword.
+const WB_CATEGORIES = [
+  { key: 'vendors', label: 'Vendors',
+    match: (it) => !!it.part || !!it.invId || !!it.partName },
+  { key: 'pest', label: 'Pest',
+    match: (it) => /\bpest|exterm|roach|spray|bug\b/i.test(it.t || '') },
+  { key: 'paint', label: 'Paint',
+    match: (it) => /\bpaint|prime|touch[- ]?up\b/i.test(it.t || '') },
+];
+
+function wbFormatDate(s) {
+  if (!s) return '—';
+  // 's' may be ISO datetime (openedAt/completedAt) or YYYY-MM-DD (moveIn).
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 function renderMatrix() {
   const root = document.getElementById('matrix');
   const units = filterUnits();
@@ -3429,45 +3452,44 @@ function renderMatrix() {
     root.innerHTML = `<div class="matrix-empty">${query ? 'Nothing matches. Clear search or filter.' : 'No units to show.'}</div>`;
     return;
   }
-  // Columns: stages (sorted) + Unassigned bucket at the end if any item falls through.
-  // Always show Unassigned column so users see where keywords need tuning.
-  const cols = [...stages.map(s => ({ id: s.id, name: s.name })), { id: '__unassigned__', name: 'Unassigned' }];
-  if (cols.length === 1) {
-    // Only Unassigned — means the user has no stages yet.
-    root.innerHTML = `<div class="matrix-empty">No stages defined yet. Tap <strong>Stages</strong> above to add some.</div>`;
-    return;
-  }
 
-  // Build a quick lookup: for each unit, for each column, counts of open/done items.
+  const headHtml = `
+    <tr>
+      <th class="matrix-unit-cell" style="text-transform:uppercase;">Unit</th>
+      <th>Day Started</th>
+      <th>Move-in</th>
+      <th>Day Completed</th>
+      ${WB_CATEGORIES.map(c => `<th>${escapeHtml(c.label)}</th>`).join('')}
+    </tr>`;
+
   const rowsHtml = units.map(u => {
     const items = u.items || [];
     const jeo = isJeopardy(u);
-    // Bucket items by stage.
-    const bucket = {};
-    cols.forEach(c => { bucket[c.id] = { open: 0, done: 0 }; });
-    items.forEach(it => {
-      const sid = itemStage(it) || '__unassigned__';
-      if (!bucket[sid]) bucket[sid] = { open: 0, done: 0 };
-      if (it.d) bucket[sid].done += 1;
-      else bucket[sid].open += 1;
-    });
-    const cellsHtml = cols.map(c => {
-      const b = bucket[c.id] || { open: 0, done: 0 };
-      const total = b.open + b.done;
+
+    // Date cells
+    const startedCell = `<td class="matrix-cell">${escapeHtml(wbFormatDate(u.openedAt))}</td>`;
+    const moveInCell = `<td class="matrix-cell">${escapeHtml(wbFormatDate(u.moveIn))}</td>`;
+    const completedCell = `<td class="matrix-cell">${u.status === 'Done' && u.completedAt ? escapeHtml(wbFormatDate(u.completedAt)) : '—'}</td>`;
+
+    // Category cells
+    const catCells = WB_CATEGORIES.map(c => {
+      const matched = items.filter(c.match);
+      const total = matched.length;
+      const done = matched.filter(i => i.d).length;
+      const open = total - done;
       let cls = 'none';
       let label = '—';
       if (total > 0) {
-        if (b.open === 0) { cls = 'done'; label = `${b.done}/${total}`; }
-        else { cls = 'partial'; label = `${b.done}/${total}`; }
-        if (jeo && b.open > 0) cls = 'jeo';
+        if (open === 0) { cls = 'done'; label = `${done}/${total} ✓`; }
+        else { cls = 'partial'; label = `${done}/${total}`; }
+        if (jeo && open > 0) cls = 'jeo';
       }
       return `<td class="matrix-cell ${cls}">${label}</td>`;
     }).join('');
-    const unitLabel = `${escapeHtml(u.id)}<small>${escapeHtml(u.status)}</small>`;
-    return `<tr><td class="matrix-unit-cell">${unitLabel}</td>${cellsHtml}</tr>`;
-  }).join('');
 
-  const headHtml = `<tr><th class="matrix-unit-cell" style="text-transform:uppercase;">Unit</th>${cols.map(c => `<th>${escapeHtml(c.name)}</th>`).join('')}</tr>`;
+    const unitLabel = `${escapeHtml(u.id)}<small>${escapeHtml(u.status)}</small>`;
+    return `<tr><td class="matrix-unit-cell">${unitLabel}</td>${startedCell}${moveInCell}${completedCell}${catCells}</tr>`;
+  }).join('');
 
   root.innerHTML = `
     <div class="matrix-wrap">
