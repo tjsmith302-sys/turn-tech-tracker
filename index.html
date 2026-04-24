@@ -1977,6 +1977,18 @@ document.getElementById('cards').addEventListener('click', e => {
       }
     }
     it.d = willBeDone;
+    // Auto-clear blocker if the checked-off item matches it (case-insensitive)
+    if (willBeDone && unit.blocker) {
+      const itemText = (it.t || '').trim().toLowerCase();
+      const blockerText = unit.blocker.trim().toLowerCase();
+      if (itemText && itemText === blockerText) {
+        unit.blocker = '';
+        unit.vendor = '';
+        if (unit.status === 'Waiting on Part' || unit.status === 'Waiting on Vendor') {
+          unit.status = 'In Progress';
+        }
+      }
+    }
     save(); render();
     return;
   }
