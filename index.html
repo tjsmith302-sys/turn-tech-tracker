@@ -437,6 +437,197 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* ---------- Stages: manager list rows (reuses tpl patterns) ---------- */
+  .stg-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface-2);
+    cursor: pointer;
+    gap: 8px;
+  }
+  .stg-row:active { transform: scale(0.99); }
+  .stg-row .stg-name {
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .stg-row .stg-kw {
+    font-size: 11px;
+    color: var(--ink-faint);
+    font-style: italic;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .stg-row .stg-ord {
+    display: flex;
+    gap: 4px;
+  }
+  .stg-row .stg-ord-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--ink-faint);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 13px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .stg-row .stg-ord-btn:active { background: var(--surface); }
+
+  /* ---------- Matrix view ---------- */
+  .view-toggle {
+    display: inline-flex;
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 2px;
+    background: var(--surface-2);
+    margin-left: auto;
+  }
+  .view-toggle button {
+    background: transparent;
+    border: none;
+    color: var(--ink-faint);
+    font-size: 12px;
+    font-family: var(--font);
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+  }
+  .view-toggle button[aria-pressed="true"] {
+    background: var(--moss-deep);
+    color: var(--ivory);
+  }
+  .controls-row-bottom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .stages-link {
+    background: transparent;
+    border: none;
+    color: var(--ink-faint);
+    font-size: 12px;
+    font-family: var(--font);
+    padding: 6px 10px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 0.5px;
+  }
+  .stages-link:active { color: var(--ink); }
+
+  .matrix-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 8px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  .matrix-wrap::-webkit-scrollbar { height: 6px; }
+  .matrix-wrap::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+  .matrix-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    font-family: var(--font);
+    font-size: 12px;
+    width: max-content;
+    min-width: 100%;
+  }
+  .matrix-table th, .matrix-table td {
+    padding: 10px 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  .matrix-table th:last-child, .matrix-table td:last-child { border-right: none; }
+  .matrix-table thead th {
+    background: var(--surface-2);
+    color: var(--ink-faint);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .matrix-table tbody tr:last-child td { border-bottom: none; }
+  .matrix-unit-cell {
+    text-align: left !important;
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 13px;
+    background: var(--surface-2);
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 90px;
+    border-right: 1px solid var(--line) !important;
+  }
+  .matrix-unit-cell small {
+    display: block;
+    font-weight: 400;
+    color: var(--ink-faint);
+    font-size: 10px;
+    margin-top: 2px;
+    letter-spacing: 0.02em;
+  }
+  .matrix-cell {
+    min-width: 70px;
+    height: 44px;
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+  .matrix-cell.none   { background: transparent; }
+  .matrix-cell.partial { background: rgba(200,154,88,0.18); color: var(--warn); }
+  .matrix-cell.done    { background: rgba(143,177,148,0.22); color: var(--accent); }
+  .matrix-cell.jeo     { background: rgba(181,89,58,0.22); color: var(--stop); font-weight: 600; }
+  .matrix-empty {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--ink-faint);
+    font-size: 13px;
+  }
+
+  /* Per-item stage select in unit edit modal */
+  .item-stage-select {
+    margin-top: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .item-stage-select select {
+    font-family: var(--font);
+    font-size: 11px;
+    padding: 4px 6px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface-2);
+    color: var(--ink-faint);
+  }
+
   /* Flag picker inside the edit modal */
   .flag-presets {
     display: flex;
@@ -1426,9 +1617,17 @@
         <button class="chip" data-filter="hold" aria-pressed="false">On Hold</button>
         <button class="chip" data-filter="Done" aria-pressed="false">Completed</button>
       </div>
+      <div class="controls-row-bottom">
+        <button type="button" class="stages-link" id="openStagesBtn">Stages</button>
+        <div class="view-toggle" id="unitsViewToggle" role="group" aria-label="Units view mode">
+          <button type="button" data-mode="cards" aria-pressed="true">Cards</button>
+          <button type="button" data-mode="matrix" aria-pressed="false">Matrix</button>
+        </div>
+      </div>
     </div>
 
     <div class="cards" id="cards"></div>
+    <div id="matrix" style="display:none;"></div>
   </section>
 
   <!-- Inventory view -->
@@ -1576,6 +1775,40 @@ Paint touch-up…"></textarea>
       <button class="btn-ghost" id="tpl-edit-cancel">Cancel</button>
       <button class="btn-danger" id="tpl-edit-delete">Delete</button>
       <button class="btn-primary" id="tpl-edit-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stage manager modal -->
+<div class="modal-backdrop" id="stgModal">
+  <div class="modal">
+    <h2>Stages</h2>
+    <div class="tpl-sub">Group your punch items into stages (Paint, Clean, etc.). Used by the Matrix view.</div>
+    <div id="stg-list" class="tpl-list"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="stg-new">+ New Stage</button>
+      <button class="btn-primary" id="stg-close">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stage edit modal -->
+<div class="modal-backdrop" id="stgEditModal">
+  <div class="modal">
+    <h2 id="stgEditTitle">Edit Stage</h2>
+    <div class="field">
+      <label>Name</label>
+      <input id="stg-name" type="text" placeholder="e.g. Paint" />
+    </div>
+    <div class="field">
+      <label>Keywords (comma-separated)</label>
+      <input id="stg-keywords" type="text" placeholder="e.g. paint, prime, touch-up" />
+      <div class="tpl-sub" style="margin:6px 0 0;">Items whose text contains any of these words are auto-assigned to this stage.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="stg-edit-cancel">Cancel</button>
+      <button class="btn-danger" id="stg-edit-delete">Delete</button>
+      <button class="btn-primary" id="stg-edit-save">Save</button>
     </div>
   </div>
 </div>
@@ -1922,6 +2155,65 @@ async function tplDelete(id) {
 }
 function tplNewId() {
   return 't_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+/* ---------- Stages cloud sync ---------- */
+const STG_ENDPOINT = `${SUPABASE_URL}/rest/v1/turn_stages`;
+const STAGE_PROPERTY = 'default'; // Phase 1: single implicit property
+let stages = []; // [{id, property, name, sort_order, keywords}]
+
+async function stgLoad() {
+  try {
+    const res = await fetch(`${STG_ENDPOINT}?select=*&property=eq.${encodeURIComponent(STAGE_PROPERTY)}&order=sort_order.asc,name.asc`, { headers: supaHeaders, cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    stages = await res.json();
+  } catch (e) {
+    console.warn('stgLoad failed', e);
+  }
+}
+async function stgUpsert(s) {
+  const body = {
+    id: s.id,
+    property: s.property || STAGE_PROPERTY,
+    name: s.name,
+    sort_order: s.sort_order || 0,
+    keywords: s.keywords || '',
+    updated_at: new Date().toISOString(),
+  };
+  try {
+    const res = await fetch(STG_ENDPOINT, {
+      method: 'POST',
+      headers: { ...supaHeaders, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+  } catch (e) { console.warn('stgUpsert failed', e); }
+}
+async function stgDelete(id) {
+  try {
+    await fetch(`${STG_ENDPOINT}?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE', headers: supaHeaders });
+  } catch (e) { console.warn('stgDelete failed', e); }
+}
+function stgNewId() {
+  return 's_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+function stgKeywordsArr(s) {
+  return (s.keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+}
+// Resolve an item's stage: explicit override wins, else keyword match, else null (Unassigned).
+function itemStage(item) {
+  if (!item) return null;
+  if (item.stage) {
+    // Explicit override — confirm the stage still exists; if deleted, fall through.
+    if (stages.some(s => s.id === item.stage)) return item.stage;
+  }
+  const t = (item.t || '').toLowerCase();
+  if (!t) return null;
+  for (const s of stages) {
+    const kws = stgKeywordsArr(s);
+    if (kws.some(k => k && t.includes(k))) return s.id;
+  }
+  return null;
 }
 
 let inventory = [];           // [{id,name,count,supplier,status,...}]
@@ -2276,7 +2568,12 @@ function filterUnits() {
 }
 
 /* ---------- Render ---------- */
+/* ---------- Units view mode state (declared early so render() can branch) ---------- */
+let unitsMode = 'cards';
+
 function render() {
+  // Branch: Matrix mode renders to a different DOM node and returns early.
+  if (unitsMode === 'matrix') { renderMatrix(); return; }
   const root = document.getElementById('cards');
   const units = filterUnits();
 
@@ -2999,6 +3296,189 @@ document.getElementById('tpl-edit-delete').addEventListener('click', async () =>
   renderTemplatePicker();
   closeTemplateEditor();
 });
+
+/* ---------- Stage manager ---------- */
+const stgModal = document.getElementById('stgModal');
+const stgEditModal = document.getElementById('stgEditModal');
+let editingStageId = null;
+
+function openStageManager() {
+  stgLoad().then(renderStageList);
+  renderStageList();
+  stgModal.classList.add('open');
+}
+function closeStageManager() {
+  stgModal.classList.remove('open');
+  // If the matrix view is visible, re-render with fresh stages
+  if (unitsMode === 'matrix') render();
+}
+function renderStageList() {
+  const wrap = document.getElementById('stg-list');
+  if (!stages.length) {
+    wrap.innerHTML = `<div class="tpl-sub" style="margin:0;padding:14px;text-align:center;">No stages yet. Tap + New Stage below to start.</div>`;
+    return;
+  }
+  wrap.innerHTML = stages.map((s, i) => `
+    <div class="stg-row" data-stg-edit="${escapeHtml(s.id)}">
+      <div class="stg-name">${escapeHtml(s.name)}</div>
+      <div class="stg-kw">${escapeHtml(stgKeywordsArr(s).join(', ') || 'no keywords')}</div>
+      <div class="stg-ord">
+        <button type="button" class="stg-ord-btn" data-stg-up="${escapeHtml(s.id)}" ${i === 0 ? 'disabled style="opacity:.3;"' : ''} aria-label="Move up">↑</button>
+        <button type="button" class="stg-ord-btn" data-stg-down="${escapeHtml(s.id)}" ${i === stages.length - 1 ? 'disabled style="opacity:.3;"' : ''} aria-label="Move down">↓</button>
+      </div>
+    </div>
+  `).join('');
+}
+document.getElementById('stg-list').addEventListener('click', async (e) => {
+  const upBtn = e.target.closest('[data-stg-up]');
+  const downBtn = e.target.closest('[data-stg-down]');
+  if (upBtn || downBtn) {
+    e.stopPropagation();
+    const id = (upBtn || downBtn).dataset.stgUp || (upBtn || downBtn).dataset.stgDown;
+    const idx = stages.findIndex(x => x.id === id);
+    const swapWith = upBtn ? idx - 1 : idx + 1;
+    if (idx < 0 || swapWith < 0 || swapWith >= stages.length) return;
+    // Swap sort_order values
+    const a = stages[idx], b = stages[swapWith];
+    const tmp = a.sort_order || 0;
+    a.sort_order = b.sort_order || 0;
+    b.sort_order = tmp;
+    await Promise.all([stgUpsert(a), stgUpsert(b)]);
+    await stgLoad();
+    renderStageList();
+    return;
+  }
+  const row = e.target.closest('[data-stg-edit]');
+  if (!row) return;
+  openStageEditor(row.dataset.stgEdit);
+});
+document.getElementById('stg-new').addEventListener('click', () => openStageEditor(null));
+document.getElementById('stg-close').addEventListener('click', closeStageManager);
+stgModal.addEventListener('click', e => { if (e.target === stgModal) closeStageManager(); });
+stgModal.querySelector('.modal').addEventListener('click', e => e.stopPropagation());
+document.getElementById('openStagesBtn').addEventListener('click', openStageManager);
+
+function openStageEditor(id) {
+  const s = id ? stages.find(x => x.id === id) : null;
+  editingStageId = id;
+  document.getElementById('stgEditTitle').textContent = s ? `Edit ${s.name}` : 'New Stage';
+  document.getElementById('stg-name').value = s ? s.name : '';
+  document.getElementById('stg-keywords').value = s ? (s.keywords || '') : '';
+  document.getElementById('stg-edit-delete').style.display = s ? '' : 'none';
+  stgEditModal.classList.add('open');
+}
+function closeStageEditor() {
+  stgEditModal.classList.remove('open');
+  editingStageId = null;
+}
+document.getElementById('stg-edit-cancel').addEventListener('click', closeStageEditor);
+stgEditModal.addEventListener('click', e => { if (e.target === stgEditModal) closeStageEditor(); });
+stgEditModal.querySelector('.modal').addEventListener('click', e => e.stopPropagation());
+
+document.getElementById('stg-edit-save').addEventListener('click', async () => {
+  const name = document.getElementById('stg-name').value.trim();
+  if (!name) { document.getElementById('stg-name').focus(); return; }
+  const keywords = document.getElementById('stg-keywords').value.trim();
+  const id = editingStageId || stgNewId();
+  const existing = editingStageId ? stages.find(x => x.id === id) : null;
+  const sort_order = existing
+    ? (existing.sort_order || 0)
+    : (stages.length ? Math.max(...stages.map(x => x.sort_order || 0)) + 1 : 1);
+  await stgUpsert({ id, name, keywords, sort_order, property: STAGE_PROPERTY });
+  await stgLoad();
+  renderStageList();
+  closeStageEditor();
+});
+document.getElementById('stg-edit-delete').addEventListener('click', async () => {
+  if (!editingStageId) return;
+  if (!confirm('Delete this stage? Items assigned to it will fall back to keyword match or Unassigned.')) return;
+  await stgDelete(editingStageId);
+  await stgLoad();
+  renderStageList();
+  closeStageEditor();
+});
+
+/* ---------- Units view mode toggle (Cards / Matrix) ---------- */
+// `unitsMode` is declared near the top of the script so render() can branch on it.
+document.getElementById('unitsViewToggle').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-mode]');
+  if (!btn) return;
+  const mode = btn.dataset.mode;
+  if (mode === unitsMode) return;
+  unitsMode = mode;
+  document.querySelectorAll('#unitsViewToggle button').forEach(b => {
+    b.setAttribute('aria-pressed', b.dataset.mode === mode ? 'true' : 'false');
+  });
+  const cardsEl = document.getElementById('cards');
+  const matrixEl = document.getElementById('matrix');
+  if (mode === 'matrix') {
+    cardsEl.style.display = 'none';
+    matrixEl.style.display = '';
+  } else {
+    cardsEl.style.display = '';
+    matrixEl.style.display = 'none';
+  }
+  render();
+});
+
+/* ---------- Matrix renderer ---------- */
+function renderMatrix() {
+  const root = document.getElementById('matrix');
+  const units = filterUnits();
+  if (!units.length) {
+    root.innerHTML = `<div class="matrix-empty">${query ? 'Nothing matches. Clear search or filter.' : 'No units to show.'}</div>`;
+    return;
+  }
+  // Columns: stages (sorted) + Unassigned bucket at the end if any item falls through.
+  // Always show Unassigned column so users see where keywords need tuning.
+  const cols = [...stages.map(s => ({ id: s.id, name: s.name })), { id: '__unassigned__', name: 'Unassigned' }];
+  if (cols.length === 1) {
+    // Only Unassigned — means the user has no stages yet.
+    root.innerHTML = `<div class="matrix-empty">No stages defined yet. Tap <strong>Stages</strong> above to add some.</div>`;
+    return;
+  }
+
+  // Build a quick lookup: for each unit, for each column, counts of open/done items.
+  const rowsHtml = units.map(u => {
+    const items = u.items || [];
+    const jeo = isJeopardy(u);
+    // Bucket items by stage.
+    const bucket = {};
+    cols.forEach(c => { bucket[c.id] = { open: 0, done: 0 }; });
+    items.forEach(it => {
+      const sid = itemStage(it) || '__unassigned__';
+      if (!bucket[sid]) bucket[sid] = { open: 0, done: 0 };
+      if (it.d) bucket[sid].done += 1;
+      else bucket[sid].open += 1;
+    });
+    const cellsHtml = cols.map(c => {
+      const b = bucket[c.id] || { open: 0, done: 0 };
+      const total = b.open + b.done;
+      let cls = 'none';
+      let label = '—';
+      if (total > 0) {
+        if (b.open === 0) { cls = 'done'; label = `${b.done}/${total}`; }
+        else { cls = 'partial'; label = `${b.done}/${total}`; }
+        if (jeo && b.open > 0) cls = 'jeo';
+      }
+      return `<td class="matrix-cell ${cls}">${label}</td>`;
+    }).join('');
+    const unitLabel = `${escapeHtml(u.id)}<small>${escapeHtml(u.status)}</small>`;
+    return `<tr><td class="matrix-unit-cell">${unitLabel}</td>${cellsHtml}</tr>`;
+  }).join('');
+
+  const headHtml = `<tr><th class="matrix-unit-cell" style="text-transform:uppercase;">Unit</th>${cols.map(c => `<th>${escapeHtml(c.name)}</th>`).join('')}</tr>`;
+
+  root.innerHTML = `
+    <div class="matrix-wrap">
+      <table class="matrix-table">
+        <thead>${headHtml}</thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+  `;
+}
+
 function syncBlockersToItems(unit) {
   const blockers = parseBlockers(unit.blocker);
   if (!blockers.length) return;
@@ -3588,6 +4068,7 @@ setTimeout(() => {
 }, 200);
 // Templates load once on boot; re-loaded on demand by the picker.
 setTimeout(() => { tplLoad(); }, 250);
+setTimeout(() => { stgLoad().then(() => { if (unitsMode === 'matrix') render(); }); }, 260);
 </script>
 </body>
 </html>
