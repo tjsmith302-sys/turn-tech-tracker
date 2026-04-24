@@ -1544,9 +1544,51 @@ function startPolling() {
   });
 }
 
+// Count non-trivial units (real data) — used by the shrink guard.
+function unitDataWeight(arr) {
+  if (!Array.isArray(arr)) return 0;
+  return arr.length;
+}
+
 async function cloudPush(initial=false) {
   const payload = JSON.stringify(state);
   if (payload === lastRemoteStateJSON && !initial) return;
+
+  // --- SHRINK GUARD ---
+  // Before overwriting, peek at cloud. If cloud has meaningfully MORE units than
+  // we're about to push, pull instead of push. Prevents a device with a small
+  // local state from nuking everyone else's data.
+  if (!initial) {
+    try {
+      const peek = await fetch(`${REST_ENDPOINT}?id=eq.${ROW_ID}&select=state,updated_at`, { headers: supaHeaders, cache: 'no-store' });
+      if (peek.ok) {
+        const peekRows = await peek.json();
+        if (peekRows && peekRows[0]) {
+          const remote = peekRows[0].state;
+          const remoteUnits = unitDataWeight(remote);
+          const localUnits = unitDataWeight(state);
+          // Guard fires when cloud has 2+ more units than local AND local has less than cloud.
+          // The 2-unit cushion lets normal single-unit deletes through; catastrophic shrinks get blocked.
+          if (remoteUnits >= 2 && localUnits < remoteUnits - 1) {
+            console.warn('[shrink-guard] local has', localUnits, 'units but cloud has', remoteUnits, '— pulling instead of pushing');
+            state = remote;
+            if (backfillTimestamps()) { /* no-op, will push on next real change */ }
+            lastRemoteStateJSON = JSON.stringify(state);
+            lastRemoteUpdatedAt = peekRows[0].updated_at;
+            saveLocal();
+            render();
+            setSync('synced', 'Pulled (guard)');
+            setTimeout(() => setSync('synced', 'Synced'), 2000);
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      // Peek failed — don't block the push, but log.
+      console.warn('[shrink-guard] peek failed, proceeding with push', e);
+    }
+  }
+
   setSync('saving', 'Saving…');
   isSaving = true;
   try {
@@ -1561,12 +1603,46 @@ async function cloudPush(initial=false) {
     if (rows && rows[0]) lastRemoteUpdatedAt = rows[0].updated_at;
     lastRemoteStateJSON = payload;
     setSync('synced', 'Synced');
+    // Fire-and-forget daily snapshot (once per 24h per browser).
+    maybeTakeSnapshot();
   } catch (e) {
     console.warn('cloud push failed', e);
     setSync('offline', 'Offline — retrying');
     setTimeout(() => cloudPush(), 3000);
   } finally {
     isSaving = false;
+  }
+}
+
+// Daily snapshot — writes a copy of current state into turn_tech_tracker_snapshots
+// at most once per 24h per browser. Cheap insurance.
+const SNAPSHOT_KEY = 'turn-tech-tracker/last-snapshot';
+const SNAPSHOT_INTERVAL_MS = 22 * 60 * 60 * 1000; // every 22h — overlaps a bit to ensure daily
+const SNAPSHOT_ENDPOINT = `${SUPABASE_URL}/rest/v1/turn_tech_tracker_snapshots`;
+async function maybeTakeSnapshot() {
+  try {
+    const last = parseInt(localStorage.getItem(SNAPSHOT_KEY) || '0', 10);
+    if (Date.now() - last < SNAPSHOT_INTERVAL_MS) return;
+    const units = Array.isArray(state) ? state.length : 0;
+    const invCount = Array.isArray(inventory) ? inventory.length : null;
+    const body = {
+      row_id: ROW_ID,
+      state,
+      unit_count: units,
+      inventory_count: invCount,
+      source: 'client-auto'
+    };
+    const res = await fetch(SNAPSHOT_ENDPOINT, {
+      method: 'POST',
+      headers: { ...supaHeaders, 'Prefer': 'return=minimal' },
+      body: JSON.stringify(body)
+    });
+    if (res.ok) {
+      localStorage.setItem(SNAPSHOT_KEY, String(Date.now()));
+    }
+  } catch (e) {
+    // Silent — snapshots are best-effort.
+    console.warn('[snapshot] failed', e);
   }
 }
 
