@@ -289,6 +289,33 @@
     color: var(--accent);
     border-color: var(--moss-deep);
   }
+  .blocker-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .blocker-chip {
+    flex: 0 0 auto;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    color: var(--ink-soft);
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform .12s ease-out, background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .blocker-chip:active { transform: scale(0.93); }
+  .blocker-chip.on {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--moss-deep);
+  }
 
   /* ---------- Motion: press, stagger, view crossfade ---------- */
   button:active, .tabs button:active, .card-actions button:active {
@@ -1187,7 +1214,14 @@
     </div>
     <div class="field">
       <label>Blocker</label>
-      <input id="f-blocker" type="text" placeholder="e.g. Counter resurfacing, Paint touch-up" />
+      <div id="f-blocker-presets" class="blocker-presets" role="group" aria-label="Common blockers">
+        <button type="button" class="blocker-chip" data-preset="Counter resurfacing">Counter resurfacing</button>
+        <button type="button" class="blocker-chip" data-preset="Pest control">Pest control</button>
+        <button type="button" class="blocker-chip" data-preset="Paint contractor">Paint contractor</button>
+        <button type="button" class="blocker-chip" data-preset="Cleaners">Cleaners</button>
+        <button type="button" class="blocker-chip" data-preset="Carpet">Carpet</button>
+      </div>
+      <input id="f-blocker" type="text" placeholder="Other / custom (optional)" />
     </div>
     <div class="field">
       <label>Next Step</label>
@@ -2138,7 +2172,7 @@ function openModal(unit) {
   f.id.value = unit ? unit.id : '';
   f.category.value = unit ? unit.category || '' : 'Go Backs';
   f.status.value = unit ? unit.status : 'Not Started';
-  f.blocker.value = unit ? unit.blocker || '' : '';
+  hydrateBlockerChips(unit ? unit.blocker || '' : '');
   f.next.value = unit ? unit.next || '' : '';
   f.vendor.value = unit ? unit.vendor || '' : '';
   f.moveIn.value = unit ? unit.moveIn || '' : '';
@@ -2159,12 +2193,39 @@ modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 document.querySelector('#unitModal .modal').addEventListener('click', e => e.stopPropagation());
 
 // Blocker helpers (CSV) — each comma-separated blocker behaves as its own punch item.
+const BLOCKER_PRESETS = ['Counter resurfacing', 'Pest control', 'Paint contractor', 'Cleaners', 'Carpet'];
 function parseBlockers(csv) {
   return (csv || '').split(',').map(s => s.trim()).filter(Boolean);
 }
 function formatBlockers(list) {
   return list.join(', ');
 }
+function hydrateBlockerChips(csv) {
+  const list = parseBlockers(csv);
+  const lowerSet = new Set(list.map(s => s.toLowerCase()));
+  const presetLower = new Set(BLOCKER_PRESETS.map(s => s.toLowerCase()));
+  document.querySelectorAll('#f-blocker-presets .blocker-chip').forEach(btn => {
+    const on = lowerSet.has(btn.dataset.preset.toLowerCase());
+    btn.classList.toggle('on', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  const other = list.filter(b => !presetLower.has(b.toLowerCase()));
+  f.blocker.value = formatBlockers(other);
+}
+function readBlockersFromForm() {
+  const chips = Array.from(document.querySelectorAll('#f-blocker-presets .blocker-chip.on')).map(b => b.dataset.preset);
+  const other = parseBlockers(f.blocker.value);
+  // Preserve chip order first, then custom entries
+  return formatBlockers([...chips, ...other]);
+}
+// Chip click toggles selection
+document.getElementById('f-blocker-presets').addEventListener('click', (e) => {
+  const btn = e.target.closest('.blocker-chip');
+  if (!btn) return;
+  const on = !btn.classList.contains('on');
+  btn.classList.toggle('on', on);
+  btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+});
 function syncBlockersToItems(unit) {
   const blockers = parseBlockers(unit.blocker);
   if (!blockers.length) return;
@@ -2196,7 +2257,7 @@ document.getElementById('f-save').addEventListener('click', () => {
     u.id = newId;
     u.category = f.category.value.trim();
     u.status = f.status.value;
-    u.blocker = f.blocker.value.trim();
+    u.blocker = readBlockersFromForm();
     u.next = f.next.value.trim();
     u.vendor = f.vendor.value.trim();
     u.moveIn = f.moveIn.value || '';
@@ -2210,7 +2271,7 @@ document.getElementById('f-save').addEventListener('click', () => {
       id: newId,
       category: f.category.value.trim(),
       status: f.status.value,
-      blocker: f.blocker.value.trim(),
+      blocker: readBlockersFromForm(),
       next: f.next.value.trim(),
       vendor: f.vendor.value.trim(),
       moveIn: f.moveIn.value || '',
