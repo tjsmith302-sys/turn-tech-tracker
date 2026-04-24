@@ -1187,7 +1187,7 @@
     </div>
     <div class="field">
       <label>Blocker</label>
-      <input id="f-blocker" type="text" placeholder="None right now" />
+      <input id="f-blocker" type="text" placeholder="e.g. Counter resurfacing, Paint touch-up" />
     </div>
     <div class="field">
       <label>Next Step</label>
@@ -1977,15 +1977,18 @@ document.getElementById('cards').addEventListener('click', e => {
       }
     }
     it.d = willBeDone;
-    // Auto-clear blocker if the checked-off item matches it (case-insensitive)
+    // Auto-clear matching blocker from the CSV when the item is checked off
     if (willBeDone && unit.blocker) {
       const itemText = (it.t || '').trim().toLowerCase();
-      const blockerText = unit.blocker.trim().toLowerCase();
-      if (itemText && itemText === blockerText) {
-        unit.blocker = '';
-        unit.vendor = '';
-        if (unit.status === 'Waiting on Part' || unit.status === 'Waiting on Vendor') {
-          unit.status = 'In Progress';
+      const blockers = parseBlockers(unit.blocker);
+      const remaining = blockers.filter(b => b.toLowerCase() !== itemText);
+      if (remaining.length !== blockers.length) {
+        unit.blocker = formatBlockers(remaining);
+        if (!unit.blocker) {
+          unit.vendor = '';
+          if (unit.status === 'Waiting on Part' || unit.status === 'Waiting on Vendor') {
+            unit.status = 'In Progress';
+          }
         }
       }
     }
@@ -2155,6 +2158,29 @@ modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 // Prevent bubbling from the modal content to the backdrop on iOS Safari.
 document.querySelector('#unitModal .modal').addEventListener('click', e => e.stopPropagation());
 
+// Blocker helpers (CSV) — each comma-separated blocker behaves as its own punch item.
+function parseBlockers(csv) {
+  return (csv || '').split(',').map(s => s.trim()).filter(Boolean);
+}
+function formatBlockers(list) {
+  return list.join(', ');
+}
+function syncBlockersToItems(unit) {
+  const blockers = parseBlockers(unit.blocker);
+  if (!blockers.length) return;
+  unit.items = unit.items || [];
+  for (const b of blockers) {
+    const low = b.toLowerCase();
+    const existing = unit.items.find(it => (it.t || '').trim().toLowerCase() === low);
+    if (existing) {
+      // reopen if it was done
+      if (existing.d) existing.d = false;
+    } else {
+      unit.items.push({ t: b, d: false });
+    }
+  }
+}
+
 document.getElementById('f-save').addEventListener('click', () => {
   const newId = f.id.value.trim();
   if (!newId) { f.id.focus(); return; }
@@ -2174,12 +2200,13 @@ document.getElementById('f-save').addEventListener('click', () => {
     u.next = f.next.value.trim();
     u.vendor = f.vendor.value.trim();
     u.moveIn = f.moveIn.value || '';
+    syncBlockersToItems(u);
   } else {
     if (state.some(x => x.id === newId)) {
       alert('That unit number already exists.');
       return;
     }
-    state.unshift({
+    const newUnit = {
       id: newId,
       category: f.category.value.trim(),
       status: f.status.value,
@@ -2188,7 +2215,9 @@ document.getElementById('f-save').addEventListener('click', () => {
       vendor: f.vendor.value.trim(),
       moveIn: f.moveIn.value || '',
       items: []
-    });
+    };
+    syncBlockersToItems(newUnit);
+    state.unshift(newUnit);
   }
   save(); render(); closeModal();
 });
