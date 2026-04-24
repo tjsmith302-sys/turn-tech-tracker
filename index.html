@@ -431,6 +431,39 @@
   .card:has(.status-vendor)   { border-left-color: var(--moss); }
   .card:has(.status-done)     { border-left-color: var(--accent); }
   .card:has(.status-not)      { border-left-color: var(--ink-faint); }
+
+  /* Move-in jeopardy: move-in ≤ 2 days away AND not Done.
+     Overrides status border color — nothing is more urgent than a missed move-in. */
+  .card.jeopardy {
+    border-left-color: var(--stop) !important;
+    border-left-width: 4px;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--stop) 35%, transparent);
+    background: color-mix(in srgb, var(--stop) 5%, var(--surface));
+  }
+  .head-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .jeopardy-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 22px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--stop);
+    color: #fff;
+    font-family: var(--font);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .jeopardy-chip .emoji { font-size: 12px; line-height: 1; }
   .card-head {
     display: flex;
     align-items: flex-start;
@@ -2156,15 +2189,19 @@ function render() {
     const closed = items.filter(i => i.d);
     const total = items.length;
     const pct = total ? Math.round((closed.length / total) * 100) : 0;
+    const jeopardy = isJeopardy(u);
     return `
-      <article class="card" data-id="${escapeHtml(u.id)}">
+      <article class="card${jeopardy ? ' jeopardy' : ''}" data-id="${escapeHtml(u.id)}">
         <div class="card-head">
           <div class="unit-id">
             ${escapeHtml(u.id)}
             <small>${escapeHtml(u.category || 'Unit')}</small>
             ${dayChip(u)}
           </div>
-          <span class="status-pill ${statusClass(u.status)}">${escapeHtml(u.status)}</span>
+          <div class="head-right">
+            <span class="status-pill ${statusClass(u.status)}">${escapeHtml(u.status)}</span>
+            ${jeopardyChip(u)}
+          </div>
         </div>
 
         ${renderFlagChips(u.flags)}
@@ -2334,6 +2371,24 @@ function moveInBadge(s) {
   if (days <= 3) return `<span class="move-in urgent">${days}d left</span>`;
   if (days <= 7) return `<span class="move-in soon">${days}d left</span>`;
   return `<span class="move-in ok">${days}d left</span>`;
+}
+// Jeopardy = move-in is today / tomorrow / day-after AND unit isn't Done.
+function isJeopardy(u) {
+  if (!u || !u.moveIn) return false;
+  if (u.status === 'Done') return false;
+  const days = daysUntil(u.moveIn);
+  if (days === null) return false;
+  return days <= 2;
+}
+function jeopardyChip(u) {
+  if (!isJeopardy(u)) return '';
+  const days = daysUntil(u.moveIn);
+  let label;
+  if (days < 0) label = `${Math.abs(days)}d OVERDUE`;
+  else if (days === 0) label = 'MOVE-IN TODAY';
+  else if (days === 1) label = 'MOVE-IN TOMORROW';
+  else label = `MOVE-IN IN ${days}D`;
+  return `<span class="jeopardy-chip"><span class="emoji">🚨</span>${label}</span>`;
 }
 function countMissingParts(items) {
   return (items || []).filter(i => i.part && !i.d).length;
