@@ -317,6 +317,78 @@
     border-color: var(--moss-deep);
   }
 
+  /* ---------- Condition flags (dog / alarm / pests / key / health / child) ---------- */
+  .flag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 0 14px 10px;
+    margin-top: -4px;
+  }
+  .flag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--warn-soft);
+    border: 1px solid var(--warn);
+    color: var(--warn);
+    font-family: var(--font);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  .flag-chip .emoji {
+    font-size: 12px;
+    line-height: 1;
+    filter: saturate(1.1);
+  }
+  .flag-chip.flag-stop {
+    background: color-mix(in srgb, var(--stop) 18%, transparent);
+    border-color: var(--stop);
+    color: var(--stop);
+  }
+  /* Flag picker inside the edit modal */
+  .flag-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .flag-preset {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    color: var(--ink-soft);
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform .12s ease-out, background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .flag-preset:active { transform: scale(0.93); }
+  .flag-preset.on {
+    background: var(--warn-soft);
+    border-color: var(--warn);
+    color: var(--warn);
+  }
+  .flag-preset.on[data-flag="pests"],
+  .flag-preset.on[data-flag="health"] {
+    background: color-mix(in srgb, var(--stop) 18%, transparent);
+    border-color: var(--stop);
+    color: var(--stop);
+  }
+
   /* ---------- Motion: press, stagger, view crossfade ---------- */
   button:active, .tabs button:active, .card-actions button:active {
     transform: scale(0.97);
@@ -1297,6 +1369,17 @@
       <input id="f-movein" type="date" />
     </div>
     <div class="field">
+      <label>Condition Flags</label>
+      <div id="f-flag-presets" class="flag-presets" role="group" aria-label="Unit condition flags">
+        <button type="button" class="flag-preset" data-flag="dog"><span class="emoji">🐕</span> Dog</button>
+        <button type="button" class="flag-preset" data-flag="alarm"><span class="emoji">🚨</span> Alarm</button>
+        <button type="button" class="flag-preset" data-flag="pests"><span class="emoji">⚠️</span> Pests</button>
+        <button type="button" class="flag-preset" data-flag="key"><span class="emoji">🔑</span> Key</button>
+        <button type="button" class="flag-preset" data-flag="health"><span class="emoji">⚕️</span> Health</button>
+        <button type="button" class="flag-preset" data-flag="child"><span class="emoji">👶</span> Child</button>
+      </div>
+    </div>
+    <div class="field">
       <label>Vendor / Part Source (optional)</label>
       <input id="f-vendor" type="text" placeholder="Shop, supplier…" />
     </div>
@@ -2084,6 +2167,8 @@ function render() {
           <span class="status-pill ${statusClass(u.status)}">${escapeHtml(u.status)}</span>
         </div>
 
+        ${renderFlagChips(u.flags)}
+
         ${(() => {
           const rows = [];
           if (u.moveIn) rows.push(`
@@ -2292,6 +2377,13 @@ document.getElementById('cards').addEventListener('click', e => {
   const unit = findUnit(id);
   if (!unit) return;
 
+  // flag chip tap — open edit modal to toggle flags
+  if (e.target.closest('[data-flag-chip]')) {
+    e.stopPropagation();
+    openModal(unit);
+    return;
+  }
+
   // item toggle
   const toggle = e.target.closest('[data-toggle]');
   if (toggle) {
@@ -2478,6 +2570,7 @@ function openModal(unit) {
   f.category.value = unit ? unit.category || '' : 'Go Backs';
   f.status.value = unit ? unit.status : 'Not Started';
   hydrateBlockerChips(unit ? unit.blocker || '' : '');
+  hydrateFlagChips(unit ? unit.flags || [] : []);
   f.next.value = unit ? unit.next || '' : '';
   f.vendor.value = unit ? unit.vendor || '' : '';
   f.moveIn.value = unit ? unit.moveIn || '' : '';
@@ -2496,6 +2589,48 @@ document.getElementById('f-cancel').addEventListener('click', closeModal);
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 // Prevent bubbling from the modal content to the backdrop on iOS Safari.
 document.querySelector('#unitModal .modal').addEventListener('click', e => e.stopPropagation());
+
+// ---------- Condition flags ----------
+const FLAG_CONFIG = [
+  { id: 'dog',    emoji: '🐕', label: 'Dog',    stop: false },
+  { id: 'alarm',  emoji: '🚨', label: 'Alarm',  stop: false },
+  { id: 'pests',  emoji: '⚠️', label: 'Pests',  stop: true  },
+  { id: 'key',    emoji: '🔑', label: 'Key',    stop: false },
+  { id: 'health', emoji: '⚕️', label: 'Health', stop: true  },
+  { id: 'child',  emoji: '👶', label: 'Child',  stop: false }
+];
+const FLAG_BY_ID = Object.fromEntries(FLAG_CONFIG.map(f => [f.id, f]));
+function normalizeFlags(arr) {
+  if (!Array.isArray(arr)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const raw of arr) {
+    const id = String(raw || '').toLowerCase();
+    if (FLAG_BY_ID[id] && !seen.has(id)) { out.push(id); seen.add(id); }
+  }
+  return out;
+}
+function renderFlagChips(flags) {
+  const list = normalizeFlags(flags);
+  if (!list.length) return '';
+  const chips = list.map(id => {
+    const cfg = FLAG_BY_ID[id];
+    const stopCls = cfg.stop ? ' flag-stop' : '';
+    return `<span class="flag-chip${stopCls}" data-flag-chip="${id}" aria-label="${cfg.label}"><span class="emoji">${cfg.emoji}</span>${escapeHtml(cfg.label)}</span>`;
+  }).join('');
+  return `<div class="flag-row">${chips}</div>`;
+}
+function hydrateFlagChips(flags) {
+  const set = new Set(normalizeFlags(flags));
+  document.querySelectorAll('#f-flag-presets .flag-preset').forEach(btn => {
+    const on = set.has(btn.dataset.flag);
+    btn.classList.toggle('on', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
+function readFlagsFromForm() {
+  return Array.from(document.querySelectorAll('#f-flag-presets .flag-preset.on')).map(b => b.dataset.flag);
+}
 
 // Blocker helpers (CSV) — each comma-separated blocker behaves as its own punch item.
 const BLOCKER_PRESETS = ['Counter resurfacing', 'Pest control', 'Paint contractor', 'Cleaners', 'Carpet'];
@@ -2526,6 +2661,14 @@ function readBlockersFromForm() {
 // Chip click toggles selection
 document.getElementById('f-blocker-presets').addEventListener('click', (e) => {
   const btn = e.target.closest('.blocker-chip');
+  if (!btn) return;
+  const on = !btn.classList.contains('on');
+  btn.classList.toggle('on', on);
+  btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+});
+// Flag preset click toggles selection
+document.getElementById('f-flag-presets').addEventListener('click', (e) => {
+  const btn = e.target.closest('.flag-preset');
   if (!btn) return;
   const on = !btn.classList.contains('on');
   btn.classList.toggle('on', on);
@@ -2568,6 +2711,7 @@ document.getElementById('f-save').addEventListener('click', () => {
     u.next = f.next.value.trim();
     u.vendor = f.vendor.value.trim();
     u.moveIn = f.moveIn.value || '';
+    u.flags = readFlagsFromForm();
     syncBlockersToItems(u);
   } else {
     if (state.some(x => x.id === newId)) {
@@ -2584,6 +2728,7 @@ document.getElementById('f-save').addEventListener('click', () => {
       next: f.next.value.trim(),
       vendor: f.vendor.value.trim(),
       moveIn: f.moveIn.value || '',
+      flags: readFlagsFromForm(),
       items: [],
       openedAt: nowIso,
       completedAt: initialStatus === 'Done' ? nowIso : null
