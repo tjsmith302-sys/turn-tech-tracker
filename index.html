@@ -203,11 +203,40 @@
     font-size: 13px;
     font-weight: 500;
     white-space: nowrap;
+    transition: transform .12s ease-out, background .15s ease, color .15s ease, border-color .15s ease;
   }
+  .chip:active { transform: scale(0.93); }
   .chip[aria-pressed="true"] {
     background: var(--accent-soft);
     color: var(--accent);
     border-color: var(--moss-deep);
+  }
+
+  /* ---------- Motion: press, stagger, view crossfade ---------- */
+  button:active, .tabs button:active, .card-actions button:active {
+    transform: scale(0.97);
+  }
+  button, .tabs button, .card-actions button {
+    transition: transform .12s ease-out, background .15s ease, color .15s ease, border-color .15s ease, opacity .15s ease;
+  }
+  .gt-rise {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity .5s cubic-bezier(0.22, 1, 0.36, 1), transform .5s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+  .gt-rise.in {
+    opacity: 1;
+    transform: none;
+  }
+  section#view-units, section#view-inventory {
+    transition: opacity .18s ease;
+  }
+  .view-fading { opacity: 0; pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .gt-rise, .gt-rise.in { transition: none; opacity: 1; transform: none; }
+    section#view-units, section#view-inventory { transition: none; }
+    button:active, .chip:active, .tabs button:active, .card-actions button:active { transform: none; }
   }
 
   /* ---------- Cards ---------- */
@@ -1385,15 +1414,34 @@ async function invDelete(id) {
 /* ---------- Tab nav ---------- */
 let activeTab = 'units';
 function switchTab(tab) {
+  if (tab === activeTab) return;
   activeTab = tab;
   document.querySelectorAll('#tabs button').forEach(b => {
     b.setAttribute('aria-pressed', b.dataset.tab === tab ? 'true' : 'false');
   });
-  document.getElementById('view-units').style.display = tab === 'units' ? '' : 'none';
-  document.getElementById('view-inventory').style.display = tab === 'inventory' ? '' : 'none';
-  document.getElementById('addUnitBtn').style.display = tab === 'units' ? '' : 'none';
-  document.getElementById('addInvBtn').style.display = tab === 'inventory' ? '' : 'none';
-  if (tab === 'inventory') { renderInventory(); renderBanner(); }
+  const unitsView = document.getElementById('view-units');
+  const invView = document.getElementById('view-inventory');
+  const outgoing = tab === 'units' ? invView : unitsView;
+  const incoming = tab === 'units' ? unitsView : invView;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const swap = () => {
+    outgoing.style.display = 'none';
+    outgoing.classList.remove('view-fading');
+    incoming.style.display = '';
+    incoming.classList.add('view-fading');
+    document.getElementById('addUnitBtn').style.display = tab === 'units' ? '' : 'none';
+    document.getElementById('addInvBtn').style.display = tab === 'inventory' ? '' : 'none';
+    if (tab === 'inventory') { renderInventory(); renderBanner(); }
+    // Next frame: remove fade class so it crossfades in
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => incoming.classList.remove('view-fading'));
+    });
+  };
+
+  if (reduce) { swap(); return; }
+  outgoing.classList.add('view-fading');
+  setTimeout(swap, 180);
 }
 
 /* ---------- Seed data ---------- */
@@ -1703,6 +1751,8 @@ function render() {
       : '';
     return header + g.units.map(renderCard).join('');
   }).join('');
+
+  applyRise(root, '.card', { stagger: 45, max: 10 });
 }
 
 function itemHtml(i, idx) {
@@ -2047,6 +2097,24 @@ window.addEventListener('load', () => {
   }, 2400);
 });
 
+/* ---------- Motion: staggered rise for list children ---------- */
+// Applies .gt-rise to direct children of a container, then triggers .in with a stagger.
+// Children are identified by selector — passed only the immediate items we want to animate.
+function applyRise(container, itemSelector, { stagger = 45, max = 12 } = {}) {
+  if (!container) return;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const items = Array.from(container.querySelectorAll(itemSelector));
+  if (reduce) return; // no-op; CSS fallback keeps them visible
+  items.forEach((el, i) => {
+    el.classList.add('gt-rise');
+    const delay = Math.min(i, max) * stagger;
+    // Force reflow then add .in next frame so transition fires
+    requestAnimationFrame(() => {
+      setTimeout(() => el.classList.add('in'), delay);
+    });
+  });
+}
+
 /* ---------- Inventory render ---------- */
 let invQuery = '';
 
@@ -2084,6 +2152,8 @@ function renderInventory() {
       </div>
     </div>
   `).join('');
+
+  applyRise(root, '.inv-row', { stagger: 35, max: 14 });
 }
 
 function renderBanner() {
